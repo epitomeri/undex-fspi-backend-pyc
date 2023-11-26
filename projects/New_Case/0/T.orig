@@ -1,0 +1,41 @@
+
+        /*--------------------------------*- C++ -*----------------------------------*/
+        FoamFile
+        {
+            version     2.0;
+            format      ascii;
+            class       volScalarField;
+            object      T.orig;
+        }
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+        
+        dimensions      [0 0 0 1 0 0 0];
+        
+        internalField   uniform 300;
+        
+        boundaryField
+        {
+            #includeEtc "caseDicts/setConstraintTypes"
+
+            walls
+            {
+                type            zeroGradient;
+            }
+            lungs
+            {
+                type            zeroGradient;
+            }
+
+            outlet
+            {
+                type            zeroGradient;
+            }
+
+            tank
+            {
+                type            zeroGradient;
+            }
+        }
+
+        // ************************************************************************* //
+        

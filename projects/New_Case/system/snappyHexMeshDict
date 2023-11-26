@@ -1,0 +1,25 @@
+
+        /*--------------------------------*- C++ -*----------------------------------*/
+        FoamFile
+        {
+            version     2.0;
+            format      ascii;
+            class       dictionary;
+            object      snappyHexMeshDict;
+        }
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+        castellatedMesh on;
+        snap            on;
+        addLayers       off;
+
+        geometry
+        {
+            
+        };
+
+        locationInMesh (0 0 0);
+
+        // Additional snappyHexMesh settings...
+        // ************************************************************************* //
+        

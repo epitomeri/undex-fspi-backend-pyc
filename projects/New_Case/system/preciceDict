@@ -1,0 +1,32 @@
+
+        /*--------------------------------*- C++ -*----------------------------------*/
+        FoamFile
+        {
+            format      binary;
+            class       dictionary;
+            location    "system";
+            object      preciceDict;
+        }
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+        preciceConfig   "../precice-config.xml";
+        participant     "New_Case";
+        modules         1 ( FSI );
+        interfaces
+        {
+            Interface
+            {
+                mesh            "New_Case-Nodes";
+                patches         (  );
+                locations       faceNodes;
+                readData        (Displacements0);
+                writeData       (New_Case-Stress);
+                connectivity    yes;
+            };
+        };
+        FSI
+        {
+            solverType compressible;
+        }
+        // ************************************************************************* //
+        

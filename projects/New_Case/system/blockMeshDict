@@ -1,0 +1,73 @@
+
+        /*--------------------------------*- C++ -*----------------------------------*/
+        FoamFile
+        {
+            version     2.0;
+            format      ascii;
+            class       dictionary;
+            object      blockMeshDict;
+        }
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+        
+        convertToMeters 1;
+        
+        x       0.2;
+        nx      #neg $x;
+        y       0.2;
+        ny      #neg $y;
+        z       0.3;
+        nz      #neg $z;
+        
+        vertices
+        (
+            ( $nx  $ny  $nz  )
+            ( $x   $ny  $nz  )
+            ( $x   $y   $nz  )
+            ( $nx  $y   $nz  )
+
+            ( $nx  $ny  $z   )
+            ( $x   $ny  $z   )
+            ( $x   $y   $z   )
+            ( $nx  $y   $z   )
+
+        );
+        
+        nx 40;
+        ny 40;
+        nz 60;
+        
+        blocks
+        (
+            hex (0 1 2 3 4 5 6 7) ($nx $ny $nz) simpleGrading (1 1 1)
+        );
+        
+        boundary
+        (
+            tank
+            {
+                type wall;
+                faces
+                (
+                    (0 1 2 3)
+                    (0 1 5 4)
+                    (1 2 6 5)
+                    (2 3 7 6)
+                    (3 0 4 7)
+                );
+            }
+            outlet
+            {
+                type patch;
+                faces
+                (
+                    (4 5 6 7)
+                );
+            }
+        );
+        
+        mergePatchPairs
+        (
+        );
+        
+        // ************************************************************************* //
+        

@@ -1,0 +1,45 @@
+
+        /*--------------------------------*- C++ -*----------------------------------*/
+        FoamFile
+        {
+            version     2.0;
+            format      ascii;
+            class       volScalarField;
+            object      alpha.Explosive-arya.orig;
+        }
+        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+        
+        dimensions      [0 0 0 0 0 0 0];
+        
+        internalField   uniform 0;
+        
+        boundaryField
+        {
+            #includeEtc "caseDicts/setConstraintTypes"
+                  hello-arya
+      {
+          type            zeroGradient;
+      }
+            
+            walls
+            {
+                type            zeroGradient;
+            }
+            lungs
+            {
+                type            zeroGradient;
+            }
+        
+            outlet
+            {
+                type            zeroGradient;
+            }
+        
+            tank
+            {
+                type            zeroGradient;
+            }
+        }
+        
+        // ************************************************************************* //
+        
