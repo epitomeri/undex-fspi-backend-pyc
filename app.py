@@ -35,6 +35,13 @@ def handle_precice():
         filename = os.path.basename(output_file_path)
 
         return send_from_directory(directory, filename, as_attachment=True)
+    
+@app.route('/test', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_test():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        return "Hello World!"
 
 def _build_cors_preflight_response():
     response = make_response()
