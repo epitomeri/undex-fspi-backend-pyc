@@ -76,7 +76,7 @@ class SystemGenerator:
         """
 
 
-    def generate_control_dict(self, end_time, time_step_size, write_interval, adjust_time_step, max_courant_number, probe, impulse, fields_max):
+    def generate_control_dict(self, end_time, time_step_size, write_interval, adjust_time_step, max_courant_number, probe):
         probe_section = ""
         if probe["selected"]:
             probe_fields = " ".join(key for key, value in probe["fields"].items() if value)
