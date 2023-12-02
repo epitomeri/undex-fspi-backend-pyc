@@ -1,5 +1,6 @@
 import os
 import shutil
+from turtle import st
 
 class ScriptGen:
 
@@ -119,8 +120,7 @@ febio-precice febio-case.dmp ../precice-config.xml -restart -dump 100
 """
     
             file.write(solid_script)
-
-
+            
     @staticmethod
     def gen_run_script(projectid):
         project_base_path = f'./projects/{projectid}'

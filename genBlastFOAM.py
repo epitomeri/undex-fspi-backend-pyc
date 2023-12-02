@@ -163,18 +163,18 @@ class BlastFoamGenerator:
 
     def generate_clean(self):
         projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
-        system_dir = os.path.join(projects_dir, "system")
+        system_dir = os.path.join(projects_dir)
 
         if not os.path.exists(system_dir):
             os.makedirs(system_dir)
 
         clean_content = """#!/bin/sh
-                            cd ${0%/*} || exit 1    # run from this directory
+cd ${0%/*} || exit 1    # run from this directory
 
-                            # Source tutorial clean functions
-                            . $WM_PROJECT_DIR/bin/tools/CleanFunctions
+# Source tutorial clean functions
+. $WM_PROJECT_DIR/bin/tools/CleanFunctions
 
-                            cleanCase
+cleanCase
         """
         clean_file_path = os.path.join(system_dir, "Allclean.sh")
         with open(clean_file_path, 'w') as file:
