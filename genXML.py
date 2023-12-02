@@ -58,7 +58,7 @@ class PreCICEConfigGenerator:
                     except Exception as e:
                         print(f"An error occurred while processing {file_path}: {e}")
 
-    def generate_xml(self, data):
+    def generate_xml(self, data, projectid):
 
         self.load_precice_contents()
 
@@ -195,12 +195,7 @@ class PreCICEConfigGenerator:
         tree = ET.ElementTree(start)
 
         # Write the tree to a file
-        tree.write("output.xml", xml_declaration=True, encoding='utf-8')
+        tree.write(f'./projects/{projectid}/precice-output.xml', xml_declaration=True, encoding='utf-8')
 
-        return "output.xml"
+        return f'./projects/{projectid}/precice-output.xml'
     
-
-if __name__ == "__main__":
-    generator = PreCICEConfigGenerator()
-    from data import data
-    generator.generate_xml(data)

@@ -371,7 +371,7 @@ class SystemGenerator:
 
 
     def generate_surface_features(self, geometries):
-        surface_entries = "\n    ".join(f'"{g["name"]}"' for g in geometries if g["type"] == "stl")
+        surface_entries = "\n    ".join(f'"{g["name"]}"' for g in geometries if g["geoType"] == "stl")
 
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/

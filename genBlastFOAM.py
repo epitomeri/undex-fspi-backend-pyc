@@ -6,13 +6,14 @@ from blastFOAMGen.zero import ZeroGenerator
 from blastFOAMGen.system import SystemGenerator
 
 class BlastFoamGenerator:
-    def __init__(self, data):
+    def __init__(self, data, projectid):
+        self.projectid = projectid
         self.data = data
 
     def generate_constant(self):
         constant_generator = ConstantGenerator()
 
-        projects_dir = f'./projects/{self.data["participantName"]}' 
+        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
         constant_dir = os.path.join(projects_dir, "constant")
 
         if not os.path.exists(constant_dir):
@@ -47,7 +48,7 @@ class BlastFoamGenerator:
 
     def generate_zero(self):
         zero_generator = ZeroGenerator()
-        projects_dir = f'./projects/{self.data["participantName"]}' 
+        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
         zero_dir = os.path.join(projects_dir, "0")
 
         if not os.path.exists(zero_dir):
@@ -105,7 +106,7 @@ class BlastFoamGenerator:
                 
     def generate_system(self):
         system_generator = SystemGenerator()
-        projects_dir = f'./projects/{self.data["participantName"]}' 
+        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
         system_dir = os.path.join(projects_dir, "system")
 
         if not os.path.exists(system_dir):
@@ -159,16 +160,39 @@ class BlastFoamGenerator:
             file.write(surface_feautures_content)
             print(f"File created: {surface_feautures_file_path}")
 
+
+    def generate_clean(self):
+        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
+        system_dir = os.path.join(projects_dir, "system")
+
+        if not os.path.exists(system_dir):
+            os.makedirs(system_dir)
+
+        clean_content = """#!/bin/sh
+                            cd ${0%/*} || exit 1    # run from this directory
+
+                            # Source tutorial clean functions
+                            . $WM_PROJECT_DIR/bin/tools/CleanFunctions
+
+                            cleanCase
+        """
+        clean_file_path = os.path.join(system_dir, "Allclean.sh")
+        with open(clean_file_path, 'w') as file:
+            file.write(clean_content)
+            print(f"File created: {clean_file_path}")
+
         
-    def generate_all(self):
-        projects_dir = './projects' 
+    def generate_all(self): 
+        projects_dir = f'./projects/{self.projectid}' 
         participant_dir = os.path.join(projects_dir, self.data["participantName"])
 
         if not os.path.exists(participant_dir):
             os.makedirs(participant_dir)
 
 
-
         self.generate_constant()
         self.generate_zero()
         self.generate_system()
+        self.generate_clean()
+
+        return participant_dir
