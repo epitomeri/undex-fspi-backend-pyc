@@ -1,6 +1,5 @@
 import os
 import shutil
-from turtle import st
 
 class ScriptGen:
 
