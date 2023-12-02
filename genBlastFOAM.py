@@ -118,7 +118,7 @@ class BlastFoamGenerator:
             file.write(block_mesh_content)
             print(f"File created: {block_mesh_file_path}")
 
-        control_dict_content = system_generator.generate_control_dict(self.data["systemSettings"]["endTime"], self.data["systemSettings"]["timestepSize"], self.data["systemSettings"]["writeInterval"], self.data["systemSettings"]["adjustTimestep"], self.data["systemSettings"]["maxCourantNumber"], self.data["mesh"]["outputControls"]["probe"])
+        control_dict_content = system_generator.generate_control_dict(self.data["systemSettings"]["endTime"], self.data["systemSettings"]["timestepSize"], self.data["systemSettings"]["writeInterval"], self.data["systemSettings"]["adjustTimestep"], self.data["systemSettings"]["maxCourantNumber"], self.data["outputControls"]["probe"])
         control_dict_file_path = os.path.join(system_dir, "controlDict")
         with open(control_dict_file_path, 'w') as file:
             file.write(control_dict_content)
