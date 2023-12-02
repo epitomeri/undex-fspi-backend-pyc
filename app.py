@@ -15,6 +15,10 @@ app = Flask(__name__)
 CORS(app)
 
 
+@app.before_request
+def before_request():
+    if not os.path.exists('./projects'):
+        os.makedirs('./projects')
 
 @app.route("/blastfoamgen/<projectid>", methods=['POST', 'OPTIONS'])  # type: ignore
 def handle_blastfoam(projectid):
