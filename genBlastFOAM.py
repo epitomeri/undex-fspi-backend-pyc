@@ -176,7 +176,7 @@ cd ${0%/*} || exit 1    # run from this directory
 
 cleanCase
         """
-        clean_file_path = os.path.join(system_dir, "Allclean.sh")
+        clean_file_path = os.path.join(system_dir, "Allclean")
         with open(clean_file_path, 'w') as file:
             file.write(clean_content)
             print(f"File created: {clean_file_path}")

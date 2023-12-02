@@ -38,7 +38,7 @@ echo "Cleaning complete!"
 """
 
             # Write the script to hello.txt
-            with open(os.path.join(project_base_path, 'Allclean.sh'), 'w') as file:
+            with open(os.path.join(project_base_path, 'Allclean'), 'w') as file:
                 file.write(clean_script)
 
     @staticmethod
@@ -46,7 +46,7 @@ echo "Cleaning complete!"
 
         if(data["phaseProperties"]["explosive"]["active"] == True):
             project_base_path = f'./projects/{projectid}'
-            with open(os.path.join(project_base_path, f'run{data["participantName"]}.sh'), 'w') as file:
+            with open(os.path.join(project_base_path, f'run{data["participantName"]}'), 'w') as file:
                 explosive_script = """#!/bin/sh
 cd ${0%/*} || exit 1    # run from this directory
 
@@ -86,7 +86,7 @@ runParallel -o $(getApplication)
 
         elif(data["phaseProperties"]["explosive"]["active"] == False):
             project_base_path = f'./projects/{projectid}'
-            with open(os.path.join(project_base_path, f'run{data["participantName"]}.sh'), 'w') as file:
+            with open(os.path.join(project_base_path, f'run{data["participantName"]}'), 'w') as file:
                 explosive_script = """#!/bin/sh
 cd ${0%/*} || exit 1    # run from this directory
 
@@ -111,7 +111,7 @@ runParallel -o $(getApplication)
     @staticmethod
     def gen_solid_script(projectid):
         project_base_path = f'./projects/{projectid}'
-        with open(os.path.join(project_base_path, f'runSolid.sh'), 'w') as file:
+        with open(os.path.join(project_base_path, f'runSolid'), 'w') as file:
             solid_script = """#!/bin/bash
 echo "Preparing and running the Solid participant..."
 cd Solid
@@ -123,7 +123,7 @@ febio-precice febio-case.dmp ../precice-config.xml -restart -dump 100
     @staticmethod
     def gen_run_script(projectid):
         project_base_path = f'./projects/{projectid}'
-        with open(os.path.join(project_base_path, f'run.sh'), 'w') as file:
+        with open(os.path.join(project_base_path, f'run'), 'w') as file:
             run_script = """cd ./projects/""" + projectid + """
 chmod 755 runFluid-Outer
 chmod 755 runFluid-Inner

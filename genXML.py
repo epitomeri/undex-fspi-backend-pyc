@@ -172,9 +172,9 @@ class PreCICEConfigGenerator:
         for content in self.precice_contents:
             name = self.extract_participant(content)
 
-            if(data["network"]["type"] == "Infiniband"):
+            if(data["network"]["type"] == "ib0"):
                 m2n_sockets = ET.SubElement(root, "m2n:sockets", from_=name, to="FEBio", network="ib0", exchange_directory="..")
-            elif(data["network"]["type"] == "Ethernet"):
+            elif(data["network"]["type"] == "eth0"):
                 m2n_sockets = ET.SubElement(root, "m2n:sockets", from_=name, to="FEBio", network="eth0", exchange_directory="..")
 
 
@@ -195,7 +195,7 @@ class PreCICEConfigGenerator:
         tree = ET.ElementTree(start)
 
         # Write the tree to a file
-        tree.write(f'./projects/{projectid}/precice-output.xml', xml_declaration=True, encoding='utf-8')
+        tree.write(f'./projects/{projectid}/precice-config.xml', xml_declaration=True, encoding='utf-8')
 
-        return f'./projects/{projectid}/precice-output.xml'
+        return f'./projects/{projectid}/precice-config.xml'
     

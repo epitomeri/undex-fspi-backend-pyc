@@ -94,7 +94,7 @@ def handle_run(projectid):
         project_base_path = f'./projects/{projectid}'
         ScriptGen.gen_run_script(projectid)
 
-        subprocess.run(['bash', f'{project_base_path}/run.sh'])
+        subprocess.run(['bash', f'{project_base_path}/run'])
 
         return 'Simulation started', 200
 
