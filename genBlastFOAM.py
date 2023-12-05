@@ -33,7 +33,7 @@ class BlastFoamGenerator:
             print(f"File created: {g_file_path}")
 
         momentum_transport_content = constant_generator.generate_momentum_transport()
-        momentum_transport_file_path = os.path.join(constant_dir, "transportProperties")
+        momentum_transport_file_path = os.path.join(constant_dir, "momentumTransport")
         with open(momentum_transport_file_path, 'w') as file:
             file.write(momentum_transport_content)
             print(f"File created: {momentum_transport_file_path}")

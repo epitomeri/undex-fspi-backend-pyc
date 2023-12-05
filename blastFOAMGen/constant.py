@@ -2,7 +2,7 @@
 class ConstantGenerator:
 
     def generate_dynamic_mesh_dict(self, geometries):
-        coupled_geometries = " ".join(g["name"] for g in geometries if g["coupled"])
+        coupled_geometries = " ".join(g["patchName"] for g in geometries if g["coupled"])
         return f"""
     /*--------------------------------*- C++ -*----------------------------------*/
     FoamFile
@@ -18,13 +18,33 @@ class ConstantGenerator:
 
     motionSolver    displacementLaplacian;
 
+    velocityLaplacianCoeffs
+    {{
+        diffusivity     quadratic inverseDistance ( ball_external );
+    }}
+
     displacementLaplacianCoeffs
     {{
-        diffusivity     quadratic inverseDistance
-        (
-            {coupled_geometries}
-        );
+        diffusivity     quadratic inverseDistance ( ball_external );
     }}
+
+    errorEstimator  scaledDelta;
+
+    scaledDeltaField p;
+
+    refineInterval  3;
+
+    lowerRefineLevel 0.1;
+
+    unrefineLevel   0.1;
+
+    nBufferLayers   2;
+
+    maxRefinement   2;
+
+    dumpLevel       false;
+
+    protectedPatches 1 ( ball_external );
 
     motionSolverLibs ( "libfvMotionSolvers.so" );
 
@@ -129,7 +149,7 @@ class ConstantGenerator:
         {{
             transport   const;
             thermo      eConst;
-            equationOfState linearTilloston;
+            equationOfState linearTillotson;
         }}
         equationOfState
         {{

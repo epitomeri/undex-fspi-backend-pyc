@@ -46,7 +46,7 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
-            lungs
+            "ball.*"
             {{
                 type            zeroGradient;
             }}
@@ -96,7 +96,7 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
-            lungs
+            "ball.*"
             {{
                 type            zeroGradient;
             }}
