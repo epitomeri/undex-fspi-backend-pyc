@@ -37,6 +37,7 @@ def handle_blastfoam(projectid):
 
         ScriptGen.gen_clean_script(projectid)
         ScriptGen.gen_explosive_script(data, projectid)
+        ScriptGen.gen_validation(projectid)
         return send_file(zip_file_path, as_attachment=True)
 
 @app.route('/precicegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
@@ -54,7 +55,6 @@ def handle_precice(projectid):
         filename = os.path.basename(output_file_path)
 
         ScriptGen.gen_clean_script(projectid)
-        ScriptGen.gen_validation(projectid)
         return send_from_directory(directory, filename, as_attachment=True)
     
 @app.route('/febio/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore

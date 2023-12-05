@@ -14,12 +14,12 @@ class SystemGenerator:
         
         convertToMeters 1;
         
-        x       0.2;
-        nx      #neg $x;
-        y       0.2;
-        ny      #neg $y;
-        z       0.3;
-        nz      #neg $z;
+        x       106.7e-2;
+        nx      -106.7e-2;
+        y       106.7e-2;
+        ny      -106.7e-2;
+        z       106.7e-2;
+        nz      -106.7e-2;
         
         vertices
         (
@@ -35,9 +35,9 @@ class SystemGenerator:
 
         );
         
-        nx 40;
-        ny 40;
-        nz 60;
+        nx 106;
+        ny 106;
+        nz 102;
         
         blocks
         (
@@ -76,25 +76,25 @@ class SystemGenerator:
         """
 
 
-    def generate_control_dict(self, end_time, time_step_size, write_interval, adjust_time_step, max_courant_number, probe):
+    def generate_control_dict(self, end_time, time_step_size, write_interval, adjust_time_step, max_courant_number, probe, patch_name):
         probe_section = ""
         if probe["selected"]:
             probe_fields = " ".join(key for key, value in probe["fields"].items() if value)
             probe_locations = "\n            ".join(f"({loc['x']} {loc['y']} {loc['z']})" for loc in probe["locations"])
             probe_section = f"""
-    probes
-    {{
-        type blastProbes;
-        adjustLocations yes;
-        append yes;
-        fields ({probe_fields});
-        writeVTK yes;
-        probeLocations
-        (
-            {probe_locations}
-        );
-    }}
-    """
+            probes
+            {{
+                type blastProbes;
+                adjustLocations yes;
+                append yes;
+                fields ({probe_fields});
+                writeVTK yes;
+                probeLocations
+                (
+                    {probe_locations}
+                );
+            }}
+            """
 
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
@@ -118,10 +118,7 @@ class SystemGenerator:
         adjustTimeStep  {"yes" if adjust_time_step else "no"};
         maxCo           {max_courant_number};
         maxDeltaT       1;
-        functions
-        {{
-            {probe_section}
-        }}
+        
         writeFormat     ascii;
 
         writePrecision  6;
@@ -140,7 +137,7 @@ class SystemGenerator:
 
         functions
         {{
-            displacementProbes
+            {patch_name}
             {{
                 type            blastPatchProbes;
                 adjustLocations yes;
@@ -296,7 +293,7 @@ class SystemGenerator:
         """
 
 
-    def generate_precice_dict(self, participant_name, geometries):
+    def generate_precice_dict(self, participant_name, geometries, patch_name):
         coupled_geometries = " ".join(geometry["name"] for geometry in geometries if geometry["coupled"])
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
@@ -317,7 +314,7 @@ class SystemGenerator:
             Interface
             {{
                 mesh            "{participant_name}-Nodes";
-                patches         1( ball_external  );
+                patches         1( {patch_name}  );
                 locations       faceNodes;
                 readData        (Displacements0);
                 writeData       ({participant_name}-Stress);
@@ -373,7 +370,8 @@ class SystemGenerator:
         """
 
 
-    def generate_snappy_hex(self, snapping, geometries, point_inside_mesh):
+    def generate_snappy_hex(self, snapping, geometries, point_inside_mesh, patch_name):
+        surface_name = geometries[0]["file"]["name"].split(".")[0]
         geometry_entries = "\n".join(
             f"""
             {geometry["name"]}
@@ -403,7 +401,7 @@ class SystemGenerator:
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
         castellatedMesh on;
-        snap            on;
+        snap            {snapping};
         addLayers       off;
 
         geometry
@@ -415,13 +413,13 @@ class SystemGenerator:
                 // centre (0 0 0);
                 // radius 0.1005;
                 type triSurfaceMesh;
-                file "ball.stl";
+                file "{surface_name}.stl";
 
                 regions
                 {{
                     walls_external
                     {{
-                        name ball_external;
+                        name {patch_name};
                     }}
                 }}
             }}
@@ -469,14 +467,14 @@ class SystemGenerator:
             features
             (
                 {{
-                file "ball.eMesh";
+                file "{surface_name}.eMesh";
                 level 0;
                 }}
             );
 
             refinementSurfaces
             {{
-                ball
+                {surface_name}
                 {{
                     level (3 3);
                     patchInfo {{ type patch; }}
@@ -489,7 +487,7 @@ class SystemGenerator:
                         }}
                     }}
                 }}
-                ball_external
+                {patch_name}
                 {{
                     level (2 2);
                     patchInfo {{ type patch; }}
@@ -509,7 +507,7 @@ class SystemGenerator:
             {{
             }}
 
-            locationInMesh (0.5 0 0);
+            locationInMesh ({point_inside_mesh["x"]} {point_inside_mesh["y"]} {point_inside_mesh["z"]});
         }}
 
         snapControls
@@ -618,6 +616,7 @@ class SystemGenerator:
 
     def generate_surface_features(self, geometries):
         surface_entries = "\n    ".join(f'"{g["name"]}"' for g in geometries if g["geoType"] == "stl")
+        surface_name = geometries[0]["file"]["name"]
 
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
@@ -631,7 +630,7 @@ class SystemGenerator:
 
         surfaces
         (
-            {surface_entries}
+            {surface_name}
         );
 
         includedAngle           150;

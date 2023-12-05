@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+
 class ZeroGenerator:
 
     def get_filenames(self, phase_properties):
@@ -11,14 +14,14 @@ class ZeroGenerator:
 
         for type_ in types:
             for phase in phases_selected:
-                files.append(f"{type_}.{phase_properties[phase]['phaseName']}.orig")
+                files.append([phase, f"{type_}.{phase_properties[phase]['phaseName']}.orig"])
 
         return files
 
 
     def generate_alpha(self, file_type, phase_name, geometries):
         geometry_blocks = "\n".join(
-            f"      {geometry['name']}\n      {{\n          type            zeroGradient;\n      }}"
+            f"{geometry['name']}\n      {{\n          type            zeroGradient;\n      }}"
             for geometry in geometries
         )
         internal_field_value = "1" if file_type == "water" else "0"
@@ -46,10 +49,6 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
-            "ball.*"
-            {{
-                type            zeroGradient;
-            }}
         
             outlet
             {{
@@ -68,7 +67,7 @@ class ZeroGenerator:
 
     def generate_rho(self, phase_name, geometries, rho=None):
         geometry_blocks = "\n".join(
-            f"    {geometry['name']}\n    {{\n        type            zeroGradient;\n    }}"
+            f"{geometry['name']}\n    {{\n        type            zeroGradient;\n    }}"
             for geometry in geometries
         )
         rho_value = rho if rho is not None else "1.225"
@@ -96,10 +95,6 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
-            "ball.*"
-            {{
-                type            zeroGradient;
-            }}
         
             outlet
             {{
@@ -116,7 +111,7 @@ class ZeroGenerator:
         """
 
 
-    def generate_p(self, ambient):
+    def generate_p(self, ambient, patch_name):
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile
@@ -140,7 +135,7 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
-            lungs
+            {patch_name}
             {{
                 type            zeroGradient;
             }}
@@ -161,8 +156,8 @@ class ZeroGenerator:
         """
 
 
-    def generate_point(self):
-        return """
+    def generate_point(self, patch_name):
+        return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile
         {{
@@ -173,53 +168,52 @@ class ZeroGenerator:
         }}
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
         
-        dimensions
         dimensions      [0 0 0 0 0 0 0];
         
         internalField   uniform (0 0 0);
         
         boundaryField
-        {
+        {{
             #includeEtc "caseDicts/setConstraintTypes"
 
             walls
-            {
+            {{
                 type            fixedValue;
                 value           $internalField;
-            }
-            lungs
-            {
+            }}
+            {patch_name}
+            {{
                 type            fixedValue;
                 value           $internalField;
-            }
+            }}
 
             outlet
-            {
+            {{
                 type            fixedValue;
                 value           $internalField;
-            }
+            }}
 
             tank
-            {
-                type            fixedValue;
+            {{
+                type            timeVaryingFixedDisplacement;
                 value           $internalField;
-            }
-        }
+            }}
+        }}
 
         // ************************************************************************* //
         """
 
 
-    def generate_t(self):
-        return """
+    def generate_t(self, patch_name):
+        return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile
-        {
+        {{
             version     2.0;
             format      ascii;
             class       volScalarField;
             object      T.orig;
-        }
+        }}
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
         
         dimensions      [0 0 0 1 0 0 0];
@@ -227,43 +221,42 @@ class ZeroGenerator:
         internalField   uniform 300;
         
         boundaryField
-        {
+        {{
             #includeEtc "caseDicts/setConstraintTypes"
 
             walls
-            {
+            {{
                 type            zeroGradient;
-            }
-            lungs
-            {
+            }}
+            {patch_name}
+            {{
                 type            zeroGradient;
-            }
-
+            }}
             outlet
-            {
+            {{
                 type            zeroGradient;
-            }
+            }}
 
             tank
-            {
+            {{
                 type            zeroGradient;
-            }
-        }
+            }}
+        }}
 
         // ************************************************************************* //
         """
 
 
-    def generate_u(self):
-        return """
+    def generate_u(self, patch_name):
+        return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile
-        {
+        {{
             version     2.0;
             format      ascii;
             class       volVectorField;
             object      U.orig;
-        }
+        }}
         // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
         
         dimensions      [0 1 -1 0 0 0 0];
@@ -271,29 +264,29 @@ class ZeroGenerator:
         internalField   uniform (0 0 0);
         
         boundaryField
-        {
+        {{
             #includeEtc "caseDicts/setConstraintTypes"
 
             walls
-            {
+            {{
                 type            slip;
-            }
-            lungs
-            {
+            }}
+            {patch_name}
+            {{
                 type            movingWallVelocity;
                 value           $internalField;
-            }
+            }}
 
             outlet
-            {
+            {{
                 type            zeroGradient;
-            }
+            }}
 
             tank
-            {
+            {{
                 type            slip;
-            }
-        }
+            }}
+        }}
 
         // ************************************************************************* //
         """

@@ -1,4 +1,5 @@
 from cmath import phase
+from email.errors import UndecodableBytesDefect
 import os
 
 from blastFOAMGen.constant import ConstantGenerator
@@ -20,7 +21,7 @@ class BlastFoamGenerator:
             os.makedirs(constant_dir)
 
 
-        dynamic_mesh_content = constant_generator.generate_dynamic_mesh_dict(self.data["mesh"]["geometries"])
+        dynamic_mesh_content = constant_generator.generate_dynamic_mesh_dict(self.data["mesh"]["geometries"], self.data["mesh"]["geometries"][0]["patchName"])
         dynamic_mesh_file_path = os.path.join(constant_dir, "dynamicMeshDict")
         with open(dynamic_mesh_file_path, 'w') as file:
             file.write(dynamic_mesh_content)
@@ -54,25 +55,25 @@ class BlastFoamGenerator:
         if not os.path.exists(zero_dir):
             os.makedirs(zero_dir)
 
-        u_file_content = zero_generator.generate_u()
+        u_file_content = zero_generator.generate_u(self.data["mesh"]["geometries"][0]["patchName"])
         u_file_path = os.path.join(zero_dir, "U.orig")
         with open(u_file_path, 'w') as file:
             file.write(u_file_content)
             print(f"File created: {u_file_path}")
 
-        p_file_content = zero_generator.generate_p(self.data["phaseProperties"]["ambient"])
+        p_file_content = zero_generator.generate_p(self.data["phaseProperties"]["ambient"], self.data["mesh"]["geometries"][0]["patchName"])
         p_file_path = os.path.join(zero_dir, "p.orig")
         with open(p_file_path, 'w') as file:
             file.write(p_file_content)
             print(f"File created: {p_file_path}")
 
-        t_file_content = zero_generator.generate_t()
+        t_file_content = zero_generator.generate_t(self.data["mesh"]["geometries"][0]["patchName"])
         t_file_path = os.path.join(zero_dir, "T.orig")
         with open(t_file_path, 'w') as file:
             file.write(t_file_content)
             print(f"File created: {t_file_path}")
 
-        point_displacement_content = zero_generator.generate_point()
+        point_displacement_content = zero_generator.generate_point(self.data["mesh"]["geometries"][0]["patchName"])
         point_displacement_file_path = os.path.join(zero_dir, "pointDisplacement.orig")
         with open(point_displacement_file_path, 'w') as file:
             file.write(point_displacement_content)
@@ -81,14 +82,18 @@ class BlastFoamGenerator:
 
         files = zero_generator.get_filenames(self.data["phaseProperties"])
         for file in files:
+            phase = file[0]
+            file = file[1]
             split = file.split(".")
             fileType = split[0]
             phase_name = split[1]
 
 
             if(fileType == "rho"):
-                rho0 = 0
-                rho0 = self.data["phaseProperties"]["water"]["coefficients"]["rho0"]
+                rho0 = 1.225
+                if("coefficients" in self.data["phaseProperties"][phase].keys()):
+
+                    rho0 = self.data["phaseProperties"][phase]["coefficients"]["rho0"] 
             
                 file_content = zero_generator.generate_rho(phase_name, self.data["mesh"]["geometries"], rho0)
                 file_path = os.path.join(zero_dir, file)
@@ -118,7 +123,7 @@ class BlastFoamGenerator:
             file.write(block_mesh_content)
             print(f"File created: {block_mesh_file_path}")
 
-        control_dict_content = system_generator.generate_control_dict(self.data["systemSettings"]["endTime"], self.data["systemSettings"]["timestepSize"], self.data["systemSettings"]["writeInterval"], self.data["systemSettings"]["adjustTimestep"], self.data["systemSettings"]["maxCourantNumber"], self.data["outputControls"]["probe"])
+        control_dict_content = system_generator.generate_control_dict(self.data["systemSettings"]["endTime"], self.data["systemSettings"]["adjustTimestep"], self.data["systemSettings"]["writeInterval"], self.data["systemSettings"]["adjustTimestep"], self.data["systemSettings"]["maxCourantNumber"], self.data["outputControls"]["probe"], self.data["mesh"]["geometries"][0]["patchName"])
         control_dict_file_path = os.path.join(system_dir, "controlDict")
         with open(control_dict_file_path, 'w') as file:
             file.write(control_dict_content)
@@ -142,7 +147,7 @@ class BlastFoamGenerator:
             file.write(fv_solution_content)
             print(f"File created: {fv_solution_file_path}")
 
-        precice_dict_content = system_generator.generate_precice_dict(self.data["participantName"], self.data["mesh"]["geometries"])
+        precice_dict_content = system_generator.generate_precice_dict(self.data["participantName"], self.data["mesh"]["geometries"], self.data["mesh"]["geometries"][0]["patchName"])
         precice_dict_file_path = os.path.join(system_dir, "preciceDict")
         with open(precice_dict_file_path, 'w') as file:
             file.write(precice_dict_content)
@@ -154,7 +159,7 @@ class BlastFoamGenerator:
             file.write(setfields_content)
             print(f"File created: {setfields_file_path}")
 
-        snappy_hex_content = system_generator.generate_snappy_hex(self.data["mesh"]["snapping"], self.data["mesh"]["geometries"], self.data["mesh"]["pointInsideMesh"])
+        snappy_hex_content = system_generator.generate_snappy_hex(self.data["mesh"]["snapping"], self.data["mesh"]["geometries"], self.data["mesh"]["pointInsideMesh"], self.data["mesh"]["geometries"][0]["patchName"])
         snappy_hex_file_path = os.path.join(system_dir, "snappyHexMeshDict")
         with open(snappy_hex_file_path, 'w') as file:
             file.write(snappy_hex_content)

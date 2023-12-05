@@ -1,7 +1,7 @@
 
 class ConstantGenerator:
 
-    def generate_dynamic_mesh_dict(self, geometries):
+    def generate_dynamic_mesh_dict(self, geometries, patch_name):
         coupled_geometries = " ".join(g["patchName"] for g in geometries if g["coupled"])
         return f"""
     /*--------------------------------*- C++ -*----------------------------------*/
@@ -20,12 +20,12 @@ class ConstantGenerator:
 
     velocityLaplacianCoeffs
     {{
-        diffusivity     quadratic inverseDistance ( ball_external );
+        diffusivity     quadratic inverseDistance ( {patch_name} );
     }}
 
     displacementLaplacianCoeffs
     {{
-        diffusivity     quadratic inverseDistance ( ball_external );
+        diffusivity     quadratic inverseDistance ( {patch_name} );
     }}
 
     errorEstimator  scaledDelta;
@@ -44,7 +44,7 @@ class ConstantGenerator:
 
     dumpLevel       false;
 
-    protectedPatches 1 ( ball_external );
+    protectedPatches 1 ( {patch_name} );
 
     motionSolverLibs ( "libfvMotionSolvers.so" );
 
