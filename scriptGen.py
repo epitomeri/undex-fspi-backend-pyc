@@ -156,7 +156,6 @@ chmod 755 ./validation/createGraphs
             if os.path.exists(system_path):
                 folderLists.append(subdir)
 
-        print(folderLists , "FOLDER LISTS")
 
 
         with open(os.path.join(validation_path, f'createGraphs'), 'w') as file:

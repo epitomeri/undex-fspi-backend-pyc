@@ -371,13 +371,13 @@ class SystemGenerator:
 
 
     def generate_snappy_hex(self, snapping, geometries, point_inside_mesh, patch_name):
-        surface_name = geometries[0]["file"]["name"].split(".")[0]
+        surface_name = geometries[0]["fileString"]["name"].split(".")[0]
         geometry_entries = "\n".join(
             f"""
-            {geometry["name"]}
+            {geometry["patchName"]}
             {{
                 type {'triSurfaceMesh' if geometry["geoType"] == 'stl' else 'searchableBox'};
-                {'file "{}.stl";'.format(geometry["file"]["name"]) if geometry["geoType"] == 'stl' else ''}
+                {'file "{}.stl";'.format(geometry["fileString"]["name"]) if geometry["geoType"] == 'stl' else ''}
                 {'min ({} {} {}); max ({} {} {});'.format(*geometry["min"].values(), *geometry["max"].values()) if geometry["geoType"] == 'box' else ''}
             }}
             """ for geometry in geometries
@@ -615,8 +615,11 @@ class SystemGenerator:
 
 
     def generate_surface_features(self, geometries):
-        surface_entries = "\n    ".join(f'"{g["name"]}"' for g in geometries if g["geoType"] == "stl")
-        surface_name = geometries[0]["file"]["name"]
+        surface_entries = "\n    ".join(f'"{g["patchName"]}"' for g in geometries if g["geoType"] == "stl")
+
+
+
+        surface_name = geometries[0]["fileString"]["name"]
 
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/

@@ -25,7 +25,9 @@ def handle_blastfoam(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
+        print(request.data)
         data = request.get_json()
+        print(data)
         
         blastFoamGen = BlastFoamGenerator(data, projectid)
         output_folder_path = blastFoamGen.generate_all()
@@ -33,7 +35,6 @@ def handle_blastfoam(projectid):
         zip_file_name = os.path.basename(output_folder_path) + '.zip'
         zip_file_path = os.path.join('./tmp', secure_filename(zip_file_name)) # type: ignore
         shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=output_folder_path)
-
 
         ScriptGen.gen_clean_script(projectid)
         ScriptGen.gen_explosive_script(data, projectid)
