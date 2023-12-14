@@ -21,7 +21,7 @@ class ZeroGenerator:
 
     def generate_alpha(self, file_type, phase_name, geometries):
         geometry_blocks = "\n".join(
-            f"{geometry['name']}\n      {{\n          type            zeroGradient;\n      }}"
+            f"{geometry['fileString']['name']}\n      {{\n          type            zeroGradient;\n      }}"
             for geometry in geometries
         )
         internal_field_value = "1" if file_type == "water" else "0"
@@ -67,7 +67,7 @@ class ZeroGenerator:
 
     def generate_rho(self, phase_name, geometries, rho=None):
         geometry_blocks = "\n".join(
-            f"{geometry['name']}\n    {{\n        type            zeroGradient;\n    }}"
+            f"{geometry['fileString']['name']}\n    {{\n        type            zeroGradient;\n    }}"
             for geometry in geometries
         )
         rho_value = rho if rho is not None else "1.225"

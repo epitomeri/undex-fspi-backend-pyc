@@ -294,7 +294,7 @@ class SystemGenerator:
 
 
     def generate_precice_dict(self, participant_name, geometries, patch_name):
-        coupled_geometries = " ".join(geometry["name"] for geometry in geometries if geometry["coupled"])
+        coupled_geometries = " ".join(geometry['fileString']["name"] for geometry in geometries if geometry["coupled"])
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile

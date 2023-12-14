@@ -61,13 +61,13 @@ paraFoam -builtin -touch
 # # -- create the mesh for the fluid
 if [ ! -z constant/polyMesh ]
 then
-    (cd constant && ln -s ../../../../../../resources/FSI_snappy_STL_mesh polyMesh)
+    (cd constant && ln -s ../../resources/FSI_snappy_STL_mesh polyMesh)
 fi
 
 runApplication decomposePar -copyZero
 
 # -- Initialize hydrostatic pressure
-initializationCase="../../../../../resources/fluid_initialization_2D"
+initializationCase="../../resources/fluid_initialization_2D"
 runParallel  rotateConservativeFields $initializationCase -sourceTime 2.7e-4 \
     -additionalFields '(lambda.tnt)' \
     -centre '(-0.6085 0 0)' \
