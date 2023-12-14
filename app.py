@@ -11,6 +11,8 @@ from genXML import PreCICEConfigGenerator
 from genBlastFOAM import BlastFoamGenerator
 from scriptGen import ScriptGen
 
+from utils.formatXML import format_and_overwrite_xml_file
+
 app = Flask(__name__)
 CORS(app)
 
@@ -25,9 +27,7 @@ def handle_blastfoam(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
-        print(request.data)
         data = request.get_json()
-        print(data)
         
         blastFoamGen = BlastFoamGenerator(data, projectid)
         output_folder_path = blastFoamGen.generate_all()
@@ -55,6 +55,9 @@ def handle_precice(projectid):
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
 
+        format_and_overwrite_xml_file(output_file_path)
+
+
         ScriptGen.gen_clean_script(projectid)
         return send_from_directory(directory, filename, as_attachment=True)
     
@@ -80,10 +83,27 @@ def handle_febio(projectid):
             file.save(file_path)
 
 
-            if file.filename.endswith('.zip'): # type: ignore
+            if file.filename.endswith('.zip'): #type: ignore
                 with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                    zip_ref.extractall(directory_path)
-                os.remove(file_path)  
+                    # Find the name of the first directory (assuming it's the only one)
+                    root_folder = next(x for x in zip_ref.namelist() if x.endswith('/'))
+
+                    # Extract each file in the root folder
+                    for item in zip_ref.namelist():
+                        # Check if the item is in the root folder and is a file
+                        if item.startswith(root_folder) and not item.endswith('/'):
+                            # Define the target file path without the root folder part
+                            target_file_path = os.path.join(directory_path, os.path.relpath(item, root_folder))
+
+                            # Ensure the target directory exists
+                            os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
+
+                            # Extract the file
+                            with zip_ref.open(item) as source, open(target_file_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+
+                os.remove(file_path)
+
 
             ScriptGen.gen_solid_script(projectid)
             return 'File uploaded successfully', 200

@@ -60,6 +60,12 @@ class PreCICEConfigGenerator:
 
     def generate_xml(self, data, projectid):
 
+        projects_dir = f'./projects/{projectid}' 
+        if not os.path.exists(projects_dir):
+            os.makedirs(projects_dir)
+
+
+
         self.load_precice_contents()
 
         start = ET.Element("precice-configuration")
