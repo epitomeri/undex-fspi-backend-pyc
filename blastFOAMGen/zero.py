@@ -172,7 +172,7 @@ class ZeroGenerator:
         """
 
 
-    def generate_point(self, patch_name):
+    def generate_point(self):
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile
@@ -204,11 +204,6 @@ class ZeroGenerator:
             value           $internalField;
             }}
 
-            {patch_name}
-            {{
-                type            fixedValue;
-                value           $internalField;
-            }}
 
             outlet
             {{
@@ -227,7 +222,7 @@ class ZeroGenerator:
         """
 
 
-    def generate_t(self, patch_name):
+    def generate_t(self):
         return f"""
         /*--------------------------------*- C++ -*----------------------------------*/
         FoamFile
@@ -256,11 +251,8 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
+
             
-            {patch_name}
-            {{
-                type            zeroGradient;
-            }}
             outlet
             {{
                 type            zeroGradient;

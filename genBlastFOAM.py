@@ -72,13 +72,13 @@ class BlastFoamGenerator:
             file.write(p_file_content)
             print(f"File created: {p_file_path}")
 
-        t_file_content = zero_generator.generate_t(self.data["mesh"]["geometries"][0]["patchName"])
+        t_file_content = zero_generator.generate_t()
         t_file_path = os.path.join(zero_dir, "T.orig")
         with open(t_file_path, 'w') as file:
             file.write(t_file_content)
             print(f"File created: {t_file_path}")
 
-        point_displacement_content = zero_generator.generate_point(self.data["mesh"]["geometries"][0]["patchName"])
+        point_displacement_content = zero_generator.generate_point()
         point_displacement_file_path = os.path.join(zero_dir, "pointDisplacement.orig")
         with open(point_displacement_file_path, 'w') as file:
             file.write(point_displacement_content)
