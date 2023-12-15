@@ -140,7 +140,7 @@ class PreCICEConfigGenerator:
             }
 
             use_mesh_solid_from_febio = ET.SubElement(participant_fluid_inner, "use-mesh", attrib=attributes) # type: ignore
-            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=name, mesh=f'{name}-Nodes')
+            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=f'{name}-Stress', mesh=f'{name}-Nodes')
             write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "read-data", name='Displacements0', mesh=f'{name}-Nodes')
 
             attributes = {
@@ -169,7 +169,7 @@ class PreCICEConfigGenerator:
 
             attributes = {
                 "name": f'{name}-Nodes',
-                "from": 'Solid',
+                "from": name,
             }
             
             use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "use-mesh", attrib=attributes) # type: ignore
@@ -263,6 +263,15 @@ class PreCICEConfigGenerator:
                 "from": name,
                 "to": "FEBio"
             }
+            exchange_stress_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
+
+            attributes = {
+                "data": "Displacements0",
+                "mesh": "Solid",
+                "from": "FEBio",
+                "to": name
+            }
+
             exchange_stress_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
 
 
