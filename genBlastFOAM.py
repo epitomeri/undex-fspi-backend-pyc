@@ -60,25 +60,27 @@ class BlastFoamGenerator:
         if not os.path.exists(zero_dir):
             os.makedirs(zero_dir)
 
-        u_file_content = zero_generator.generate_u(self.data["mesh"]["geometries"][0]["patchName"])
+        explosive_active = self.data["phaseProperties"]["explosive"]["active"]
+
+        u_file_content = zero_generator.generate_u(self.data["mesh"]["geometries"][0]["patchName"], explosive_active)
         u_file_path = os.path.join(zero_dir, "U.orig")
         with open(u_file_path, 'w') as file:
             file.write(u_file_content)
             print(f"File created: {u_file_path}")
 
-        p_file_content = zero_generator.generate_p(self.data["phaseProperties"]["ambient"], self.data["mesh"]["geometries"][0]["patchName"])
+        p_file_content = zero_generator.generate_p(self.data["phaseProperties"]["ambient"], self.data["mesh"]["geometries"][0]["patchName"], explosive_active)
         p_file_path = os.path.join(zero_dir, "p.orig")
         with open(p_file_path, 'w') as file:
             file.write(p_file_content)
             print(f"File created: {p_file_path}")
 
-        t_file_content = zero_generator.generate_t()
+        t_file_content = zero_generator.generate_t(explosive_active)
         t_file_path = os.path.join(zero_dir, "T.orig")
         with open(t_file_path, 'w') as file:
             file.write(t_file_content)
             print(f"File created: {t_file_path}")
 
-        point_displacement_content = zero_generator.generate_point()
+        point_displacement_content = zero_generator.generate_point(self.data["mesh"]["geometries"][0]["patchName"], explosive_active)
         point_displacement_file_path = os.path.join(zero_dir, "pointDisplacement.orig")
         with open(point_displacement_file_path, 'w') as file:
             file.write(point_displacement_content)
@@ -100,7 +102,7 @@ class BlastFoamGenerator:
 
                     rho0 = self.data["phaseProperties"][phase]["coefficients"]["rho0"] 
             
-                file_content = zero_generator.generate_rho(phase_name, self.data["mesh"]["geometries"], rho0)
+                file_content = zero_generator.generate_rho(phase_name, self.data["mesh"]["geometries"], explosive_active, rho0)
                 file_path = os.path.join(zero_dir, file)
                 with open(file_path, 'w') as file:
                     file.write(file_content)

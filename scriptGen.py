@@ -30,7 +30,7 @@ cd {subdir}
 rm debug.log
 rm -rf processor*
 rm -f log.*
-cd ../constant\n"""
+cd ../\n"""
 
             clean_script += """
 echo "Cleaning complete!"
@@ -62,13 +62,13 @@ paraFoam -builtin -touch
 # # -- create the mesh for the fluid
 if [ ! -z constant/polyMesh ]
 then
-    (cd constant && ln -s ../../resources/FSI_snappy_STL_mesh polyMesh)
+    (cd constant && ln -s ../../../../resources/FSI_snappy_STL_mesh polyMesh)
 fi
 
 runApplication decomposePar -copyZero
 
 # -- Initialize hydrostatic pressure
-initializationCase="../../resources/fluid_initialization_2D"
+initializationCase="../../../resources/fluid_initialization_2D"
 runParallel  rotateConservativeFields $initializationCase -sourceTime 2.7e-4 \
     -additionalFields '(lambda.tnt)' \
     -centre '(-0.6085 0 0)' \
@@ -90,23 +90,25 @@ runParallel -o $(getApplication)
             project_base_path = f'./projects/{projectid}'
             with open(os.path.join(project_base_path, f'run{data["participantName"]}'), 'w') as file:
                 explosive_script = """#!/bin/sh
-cd ${0%/*} || exit 1    # run from this directory
 
-# Source tutorial run functions
-. $WM_PROJECT_DIR/bin/tools/RunFunctions
+                #!/bin/sh
+                cd ${0%/*} || exit 1    # run from this directory
 
-cd """ + data["participantName"] + """
+                # Source tutorial run functions
+                . $WM_PROJECT_DIR/bin/tools/RunFunctions
 
-# -- Create paraview file
-paraFoam -builtin -touch
+                cd """ + data["participantName"] + """
 
-# # -- create the mesh for the fluid
-runApplication blockMesh
-runApplication decomposePar -copyZero
+                # -- Create paraview file
+                paraFoam -builtin -touch
 
-# -- Run the calc
-runParallel -o $(getApplication)
-"""
+                # # -- create the mesh for the fluid
+                runApplication blockMesh
+                runApplication decomposePar -copyZero
+
+                # -- Run the calc
+                runParallel -o $(getApplication)
+                """
                 file.write(explosive_script)
                 os.chmod(os.path.join(project_base_path, f'run{data["participantName"]}'), 0o777)
 
