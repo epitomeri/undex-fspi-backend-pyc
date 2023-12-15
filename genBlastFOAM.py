@@ -20,13 +20,14 @@ class BlastFoamGenerator:
         if not os.path.exists(constant_dir):
             os.makedirs(constant_dir)
 
+        explosive_active = self.data["phaseProperties"]["explosive"]["active"]
 
         patchName = ""
         if(len(self.data["mesh"]["geometries"]) > 0):
             patchName = self.data["mesh"]["geometries"][0]["patchName"]
         else: 
             patchName = "none"
-        dynamic_mesh_content = constant_generator.generate_dynamic_mesh_dict(self.data["mesh"]["geometries"], patchName)
+        dynamic_mesh_content = constant_generator.generate_dynamic_mesh_dict(self.data["mesh"]["geometries"], patchName, explosive_active)
         dynamic_mesh_file_path = os.path.join(constant_dir, "dynamicMeshDict")
         with open(dynamic_mesh_file_path, 'w') as file:
             file.write(dynamic_mesh_content)
@@ -45,7 +46,7 @@ class BlastFoamGenerator:
             print(f"File created: {momentum_transport_file_path}")
 
         phase_properties = self.data["phaseProperties"]
-        phase_properties_content = constant_generator.generate_phase_properties(phase_properties["explosive"], phase_properties["water"], phase_properties["air"], phase_properties["ambient"])
+        phase_properties_content = constant_generator.generate_phase_properties(phase_properties["explosive"], phase_properties["water"], phase_properties["air"], phase_properties["ambient"], explosive_active)
         phase_properties_file_path = os.path.join(constant_dir, "phaseProperties")
         with open(phase_properties_file_path, 'w') as file:
             file.write(phase_properties_content)
@@ -103,10 +104,18 @@ class BlastFoamGenerator:
                     rho0 = self.data["phaseProperties"][phase]["coefficients"]["rho0"] 
             
                 file_content = zero_generator.generate_rho(phase_name, self.data["mesh"]["geometries"], explosive_active, rho0)
-                file_path = os.path.join(zero_dir, file)
-                with open(file_path, 'w') as file:
-                    file.write(file_content)
-                    print(f"File created: {file_path}")
+
+                if(explosive_active):
+                    file_path = os.path.join(zero_dir, file)
+                    with open(file_path, 'w') as file:
+                        file.write(file_content)
+                        print(f"File created: {file_path}")
+                else:
+                    file_path = os.path.join(zero_dir, f'{fileType}.{split[2]}')
+                    with open(file_path, 'w') as file:
+                        file.write(file_content)
+                        print(f"File created: {file_path}")
+                
             
             elif(fileType == "alpha"):
                 file_content = zero_generator.generate_alpha(fileType, phase_name, self.data["mesh"]["geometries"])
@@ -124,7 +133,9 @@ class BlastFoamGenerator:
         if not os.path.exists(system_dir):
             os.makedirs(system_dir)
 
-        block_mesh_content = system_generator.generate_block_mesh()
+        explosive_active = self.data["phaseProperties"]["explosive"]["active"]
+
+        block_mesh_content = system_generator.generate_block_mesh(self.data["mesh"]["geometries"][0]["patchName"], explosive_active)
         block_mesh_file_path = os.path.join(system_dir, "blockMeshDict")
         with open(block_mesh_file_path, 'w') as file:
             file.write(block_mesh_content)
@@ -142,7 +153,7 @@ class BlastFoamGenerator:
             file.write(decompose_content)
             print(f"File created: {decompose_file_path}")
 
-        fv_scheme_content = system_generator.generate_fv_schemes(self.data["phaseProperties"]["explosive"])
+        fv_scheme_content = system_generator.generate_fv_schemes(self.data["phaseProperties"]["explosive"], explosive_active)
         fv_scheme_file_path = os.path.join(system_dir, "fvSchemes")
         with open(fv_scheme_file_path, 'w') as file:
             file.write(fv_scheme_content)
@@ -160,23 +171,26 @@ class BlastFoamGenerator:
             file.write(precice_dict_content)
             print(f"File created: {precice_dict_file_path}")
         
-        setfields_content = system_generator.generate_setfields(self.data["phaseProperties"]["air"], self.data["phaseProperties"]["water"], self.data["phaseProperties"]["explosive"])
-        setfields_file_path = os.path.join(system_dir, "setFieldsDict")
-        with open(setfields_file_path, 'w') as file:
-            file.write(setfields_content)
-            print(f"File created: {setfields_file_path}")
+        if not explosive_active:
+            setfields_content = system_generator.generate_setfields(self.data["phaseProperties"]["air"], self.data["phaseProperties"]["water"], self.data["phaseProperties"]["explosive"])
+            setfields_file_path = os.path.join(system_dir, "setFieldsDict")
+            with open(setfields_file_path, 'w') as file:
+                file.write(setfields_content)
+                print(f"File created: {setfields_file_path}")
 
-        snappy_hex_content = system_generator.generate_snappy_hex(self.data["mesh"]["snapping"], self.data["mesh"]["geometries"], self.data["mesh"]["pointInsideMesh"], self.data["mesh"]["geometries"][0]["patchName"])
-        snappy_hex_file_path = os.path.join(system_dir, "snappyHexMeshDict")
-        with open(snappy_hex_file_path, 'w') as file:
-            file.write(snappy_hex_content)
-            print(f"File created: {snappy_hex_file_path}")
+        if not explosive_active:
+            snappy_hex_content = system_generator.generate_snappy_hex(self.data["mesh"]["snapping"], self.data["mesh"]["geometries"], self.data["mesh"]["pointInsideMesh"], self.data["mesh"]["geometries"][0]["patchName"])
+            snappy_hex_file_path = os.path.join(system_dir, "snappyHexMeshDict")
+            with open(snappy_hex_file_path, 'w') as file:
+                file.write(snappy_hex_content)
+                print(f"File created: {snappy_hex_file_path}")
 
-        surface_feautures_content = system_generator.generate_surface_features(self.data["mesh"]["geometries"])
-        surface_feautures_file_path = os.path.join(system_dir, "surfaceFeaturesDict")
-        with open(surface_feautures_file_path, 'w') as file:
-            file.write(surface_feautures_content)
-            print(f"File created: {surface_feautures_file_path}")
+        if not explosive_active:
+            surface_feautures_content = system_generator.generate_surface_features(self.data["mesh"]["geometries"])
+            surface_feautures_file_path = os.path.join(system_dir, "surfaceFeaturesDict")
+            with open(surface_feautures_file_path, 'w') as file:
+                file.write(surface_feautures_content)
+                print(f"File created: {surface_feautures_file_path}")
 
 
     def generate_clean(self):
@@ -187,12 +201,14 @@ class BlastFoamGenerator:
             os.makedirs(system_dir)
 
         clean_content = """#!/bin/sh
-cd ${0%/*} || exit 1    # run from this directory
+        cd ${0%/*} || exit 1    # run from this directory
 
-# Source tutorial clean functions
-. $WM_PROJECT_DIR/bin/tools/CleanFunctions
+        # Source tutorial clean functions
+        . $WM_PROJECT_DIR/bin/tools/CleanFunctions
 
-cleanCase
+        rm *.log
+
+        cleanCase
         """
         clean_file_path = os.path.join(system_dir, "Allclean")
         with open(clean_file_path, 'w') as file:

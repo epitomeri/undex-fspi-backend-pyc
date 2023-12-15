@@ -1,78 +1,227 @@
 class SystemGenerator:
 
-    def generate_block_mesh(self):
-        return """
-        /*--------------------------------*- C++ -*----------------------------------*/
-        FoamFile
-        {
-            version     2.0;
-            format      ascii;
-            class       dictionary;
-            object      blockMeshDict;
-        }
-        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-        
-        convertToMeters 1;
-        
-        x       106.7e-2;
-        nx      -106.7e-2;
-        y       106.7e-2;
-        ny      -106.7e-2;
-        z       106.7e-2;
-        nz      -106.7e-2;
-        
-        vertices
-        (
-            ( $nx  $ny  $nz  )
-            ( $x   $ny  $nz  )
-            ( $x   $y   $nz  )
-            ( $nx  $y   $nz  )
-
-            ( $nx  $ny  $z   )
-            ( $x   $ny  $z   )
-            ( $x   $y   $z   )
-            ( $nx  $y   $z   )
-
-        );
-        
-        nx 106;
-        ny 106;
-        nz 102;
-        
-        blocks
-        (
-            hex (0 1 2 3 4 5 6 7) ($nx $ny $nz) simpleGrading (1 1 1)
-        );
-        
-        boundary
-        (
-            tank
+    def generate_block_mesh(self, patch_name, explosive_active):
+        if explosive_active:
+            return """
+            /*--------------------------------*- C++ -*----------------------------------*/
+            FoamFile
             {
-                type wall;
-                faces
-                (
-                    (0 1 2 3)
-                    (0 1 5 4)
-                    (1 2 6 5)
-                    (2 3 7 6)
-                    (3 0 4 7)
-                );
+                version     2.0;
+                format      ascii;
+                class       dictionary;
+                object      blockMeshDict;
             }
-            outlet
-            {
-                type patch;
-                faces
-                (
-                    (4 5 6 7)
-                );
-            }
-        );
-        
-        mergePatchPairs
-        (
-        );
-        
-        // ************************************************************************* //
+            // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+            
+            convertToMeters 1;
+            
+            x       106.7e-2;
+            nx      -106.7e-2;
+            y       106.7e-2;
+            ny      -106.7e-2;
+            z       106.7e-2;
+            nz      -106.7e-2;
+            
+            vertices
+            (
+                ( $nx  $ny  $nz  )
+                ( $x   $ny  $nz  )
+                ( $x   $y   $nz  )
+                ( $nx  $y   $nz  )
+
+                ( $nx  $ny  $z   )
+                ( $x   $ny  $z   )
+                ( $x   $y   $z   )
+                ( $nx  $y   $z   )
+
+            );
+            
+            nx 106;
+            ny 106;
+            nz 102;
+            
+            blocks
+            (
+                hex (0 1 2 3 4 5 6 7) ($nx $ny $nz) simpleGrading (1 1 1)
+            );
+            
+            boundary
+            (
+                tank
+                {
+                    type wall;
+                    faces
+                    (
+                        (0 1 2 3)
+                        (0 1 5 4)
+                        (1 2 6 5)
+                        (2 3 7 6)
+                        (3 0 4 7)
+                    );
+                }
+                outlet
+                {
+                    type patch;
+                    faces
+                    (
+                        (4 5 6 7)
+                    );
+                }
+            );
+            
+            mergePatchPairs
+            (
+            );
+            
+            // ************************************************************************* //
+            """
+        else:
+            return f"""
+            /*--------------------------------*- C++ -*----------------------------------*\
+            =========                 |
+            \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+             \\    /   O peration     | Website:  https://openfoam.org
+              \\  /    A nd           | Version:  10
+               \\/     M anipulation  |
+            \*---------------------------------------------------------------------------*/
+            FoamFile
+            {{
+                format      ascii;
+                class       dictionary;
+                object      blockMeshDict;
+            }}
+            // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+            verbose no;
+
+            // D = 0.201
+            // thickness = 0.001067
+            geometry
+            {{
+                sphere
+                {{
+                    type triSurfaceMesh;
+                    file "$FOAM_CASE/../Solid/deformed.stl";
+                    centre (0 0 0);
+                    radius 0.09943;
+                }}
+
+                innerSphere
+                {{
+                    type searchableSphere;
+                    centre (0 0 0);
+                    radius 0.05;
+                }}
+            }}
+
+            scale 1;
+
+            nr    10;
+            nt    20;
+
+            // Rough approximation of corner points
+            v    0.07;
+            mv  -0.07;
+            vh   0.01;
+            mvh -0.01;
+
+            vertices
+            (
+                // Inner block points
+                project ($mvh $mvh $mvh) (innerSphere)
+                project ( $vh $mvh $mvh) (innerSphere)
+                project ( $vh  $vh $mvh) (innerSphere)
+                project ($mvh  $vh $mvh) (innerSphere)
+                project ($mvh $mvh  $vh) (innerSphere)
+                project ( $vh $mvh  $vh) (innerSphere)
+                project ( $vh  $vh  $vh) (innerSphere)
+                project ($mvh  $vh  $vh) (innerSphere)
+
+                // Outer block points
+                project ($mv $mv $mv) (sphere)
+                project ( $v $mv $mv) (sphere)
+                project ( $v  $v $mv) (sphere)
+                project ($mv  $v $mv) (sphere)
+                project ($mv $mv  $v) (sphere)
+                project ( $v $mv  $v) (sphere)
+                project ( $v  $v  $v) (sphere)
+                project ($mv  $v  $v) (sphere)
+            );
+
+            blocks
+            (
+                hex ( 0  1  2  3  4  5  6  7) internal ($nt $nt $nt) simpleGrading (1 1 1)
+                hex ( 9  8 12 13  1  0  4  5) internal ($nt $nt $nr) simpleGrading (1 1 1)
+                hex (10  9 13 14  2  1  5  6) internal ($nt $nt $nr) simpleGrading (1 1 1)
+                hex (11 10 14 15  3  2  6  7) internal ($nt $nt $nr) simpleGrading (1 1 1)
+                hex ( 8 11 15 12  0  3  7  4) internal ($nt $nt $nr) simpleGrading (1 1 1)
+                hex ( 8  9 10 11  0  1  2  3) internal ($nt $nt $nr) simpleGrading (1 1 1)
+                hex (13 12 15 14  5  4  7  6) internal ($nt $nt $nr) simpleGrading (1 1 1)
+            );
+
+            edges
+            (
+                // Outer edges
+                project  8  9 (sphere)
+                project 10 11 (sphere)
+                project 14 15 (sphere)
+                project 12 13 (sphere)
+
+                project  8 11 (sphere)
+                project  9 10 (sphere)
+                project 13 14 (sphere)
+                project 12 15 (sphere)
+
+                project  8 12 (sphere)
+                project  9 13 (sphere)
+                project 10 14 (sphere)
+                project 11 15 (sphere)
+
+
+                // Inner edges
+                project  0  1 (innerSphere)
+                project  2  3 (innerSphere)
+                project  6  7 (innerSphere)
+                project  4  5 (innerSphere)
+
+                project  0  3 (innerSphere)
+                project  1  2 (innerSphere)
+                project  5  6 (innerSphere)
+                project  4  7 (innerSphere)
+
+                project  0  4 (innerSphere)
+                project  1  5 (innerSphere)
+                project  2  6 (innerSphere)
+                project  3  7 (innerSphere)
+            );
+
+            faces
+            (
+
+                project ( 8 12 15 11) sphere
+                project (10 14 13  9) sphere
+                project ( 9 13 12  8) sphere
+                project (11 15 14 10) sphere
+                project ( 8 11 10  9) sphere
+                project (12 13 14 15) sphere
+            );
+
+            boundary
+            (
+                {patch_name}
+                {{
+                    type wall;
+                    faces
+                    (
+                        ( 8 12 15 11)
+                        (10 14 13  9)
+                        ( 9 13 12  8)
+                        (11 15 14 10)
+                        ( 8 11 10  9)
+                        (12 13 14 15)
+                    );
+                }}
+            );
         """
 
 
@@ -112,7 +261,7 @@ class SystemGenerator:
         startTime       0;
         stopAt          endTime;
         endTime         {end_time};
-        deltaT          {"true" if time_step_size else "false"};
+        deltaT          {time_step_size};
         writeControl    adjustableRunTime;
         writeInterval   {write_interval};
         adjustTimeStep  {"yes" if adjust_time_step else "no"};
@@ -141,7 +290,7 @@ class SystemGenerator:
             {{
                 type            blastPatchProbes;
                 adjustLocations yes;
-                patchName       ball_external;
+                patchName       {patch_name};
                 fixLocations    yes;
                 fields
                 (
@@ -196,67 +345,133 @@ class SystemGenerator:
         """
 
 
-    def generate_fv_schemes(self, explosive):
-        return f"""
-        /*--------------------------------*- C++ -*----------------------------------*/
-        FoamFile
-        {{
-            version     2.
-            version     2.0;
-            format      ascii;
-            class       dictionary;
-            location    "system";
-            object      fvSchemes;
-        }}
-        // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+    def generate_fv_schemes(self, explosive, explosive_active):
+        if(explosive_active):
+            return f"""
+            /*--------------------------------*- C++ -*----------------------------------*/
+            FoamFile
+            {{
+                version     2.
+                version     2.0;
+                format      ascii;
+                class       dictionary;
+                location    "system";
+                object      fvSchemes;
+            }}
+            // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-        fluxScheme      HLLC;
+            fluxScheme      HLLC;
 
-        ddtSchemes
-        {{
-            default         Euler;
-            timeIntegrator  RK2SSP;
-        }}
+            ddtSchemes
+            {{
+                default         Euler;
+                timeIntegrator  RK2SSP;
+            }}
 
-        gradSchemes
-        {{
-            default         cellMDLimited leastSquares 1.0;
-            grad(cellMotionU) Gauss linear;
-        }}
+            gradSchemes
+            {{
+                default         cellMDLimited leastSquares 1.0;
+                grad(cellMotionU) Gauss linear;
+            }}
 
-        divSchemes
-        {{
-            default         none;
-            div(alphaRhoPhi.{explosive["phaseName"]},lambda.{explosive["phaseName"]}) Riemann;
-            div(devTau) Gauss linear;
-        }}
+            divSchemes
+            {{
+                default         none;
+                div(alphaRhoPhi.{explosive["phaseName"]},lambda.{explosive["phaseName"]}) Riemann;
+                div(devTau) Gauss linear;
+            }}
 
-        laplacianSchemes
-        {{
-            default         Gauss linear corrected;
-            laplacian(diffusivity,cellMotionU) Gauss linear uncorrected;
-        }}
+            laplacianSchemes
+            {{
+                default         Gauss linear corrected;
+                laplacian(diffusivity,cellMotionU) Gauss linear uncorrected;
+            }}
 
-        interpolationSchemes
-        {{
-            default             linear;
-            reconstruct(alpha)  Minmod;
-            reconstruct(rho)    Minmod;
-            reconstruct(U)      MinmodV;
-            reconstruct(e)      Minmod;
-            reconstruct(p)      Minmod;
-            reconstruct(speedOfSound)   Minmod;
+            interpolationSchemes
+            {{
+                default             linear;
+                reconstruct(alpha)  Minmod;
+                reconstruct(rho)    Minmod;
+                reconstruct(U)      MinmodV;
+                reconstruct(e)      Minmod;
+                reconstruct(p)      Minmod;
+                reconstruct(speedOfSound)   Minmod;
 
-            reconstruct(lambda.{explosive["phaseName"]}) Minmod;
-        }}
+                reconstruct(lambda.{explosive["phaseName"]}) Minmod;
+            }}
 
-        snGradSchemes
-        {{
-            default         corrected;
-        }}
+            snGradSchemes
+            {{
+                default         corrected;
+            }}
 
-        // ************************************************************************* //
-        """
+            // ************************************************************************* //
+            """
+        else:
+            return f"""
+            /*--------------------------------*- C++ -*----------------------------------*\
+            | =========                 |                                                 |
+            | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+            |  \\    /   O peration     | Version:  2.3.0                                 |
+            |   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+            |    \\/     M anipulation  |                                                 |
+            \*---------------------------------------------------------------------------*/
+            FoamFile
+            {{
+                version     2.0;
+                format      ascii;
+                class       dictionary;
+                location    "system";
+                object      fvSchemes;
+            }}
+            // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+            fluxScheme      HLLC;
+
+            ddtSchemes
+            {{
+                default         Euler;
+                timeIntegrator  RK2SSP 3;
+            }}
+
+            gradSchemes
+            {{
+                default         cellMDLimited leastSquares 1.0;
+            }}
+
+            divSchemes
+            {{
+                default         none;
+                div(alphaRhoPhi.tnt,lambda.tnt) Riemann;
+                div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+                div(devTau) Gauss linear;
+            }}
+
+            laplacianSchemes
+            {{
+                default         Gauss linear corrected;
+            }}
+
+            interpolationSchemes
+            {{
+                default             linear;
+                reconstruct(alpha)  Minmod;
+                reconstruct(rho)    Minmod;
+                reconstruct(U)      MinmodV;
+                reconstruct(e)      Minmod;
+                reconstruct(p)      Minmod;
+                reconstruct(speedOfSound)   Minmod;
+
+                reconstruct(lambda.tnt) Minmod;
+            }}
+
+            snGradSchemes
+            {{
+                default         corrected;
+            }}
+
+
+            """
 
 
     def generate_fv_solution(self):
@@ -406,7 +621,7 @@ class SystemGenerator:
 
         geometry
         {{
-            ball_external
+            {patch_name}
             {{
                 // type searchableSphere;
                 // name ball_external;

@@ -82,17 +82,17 @@ class PreCICEConfigGenerator:
         root = ET.SubElement(start, "solver-interface", dimensions="3")
 
         if(data["variables"]["fluidToSolid"] ==  "Stress"):
-            data_vector = ET.SubElement(root, "data:vector", name="Stress")
+            data_vector = ET.SubElement(root, "use-data", name="Stress")
 
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
-            stress_inner = ET.SubElement(root, "data:vector", name=write_data)
+            stress_inner = ET.SubElement(root, "use-data", name=write_data)
 
         old_read_data = ""
         for content in self.precice_contents:
             read_data = self.extract_values(content, "readData")
             if(read_data != old_read_data):
-                stress_outer = ET.SubElement(root, "data:vector", name=read_data)
+                stress_outer = ET.SubElement(root, "use-data", name=read_data)
                 old_read_data = read_data
 
 
@@ -109,17 +109,17 @@ class PreCICEConfigGenerator:
 
         mesh_solid = ET.SubElement(root, "mesh", name="Solid")
         if(data["variables"]["fluidToSolid"] ==  "Stress"):
-            data_vector = ET.SubElement(mesh_solid, "data:vector", name="Stress")
+            data_vector = ET.SubElement(mesh_solid, "use-data", name="Stress")
 
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
-            stress_inner = ET.SubElement(mesh_solid, "data:vector", name=write_data)
+            stress_inner = ET.SubElement(mesh_solid, "use-data", name=write_data)
 
         old_read_data = ""
         for content in self.precice_contents:
             read_data = self.extract_values(content, "readData")
             if(read_data != old_read_data):
-                stress_outer = ET.SubElement(mesh_solid, "data:vector", name=read_data)
+                stress_outer = ET.SubElement(mesh_solid, "use-data", name=read_data)
                 old_read_data = read_data
 
 
@@ -131,14 +131,27 @@ class PreCICEConfigGenerator:
 
             participant_fluid_inner = ET.SubElement(root, "participant", name=name)
             use_mesh_fluid_inner_nodes = ET.SubElement(participant_fluid_inner, "use-mesh", name=f'{name}-Nodes', provide="yes")
-            use_mesh_solid_from_febio = ET.SubElement(participant_fluid_inner, "use-mesh", name="Solid", from_="FEBio")
+
+            attributes = {
+                "name": "Fluid",
+                "from": "FEBio",
+            }
+
+            use_mesh_solid_from_febio = ET.SubElement(participant_fluid_inner, "use-mesh", attrib=attributes) # type: ignore
             write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=f'{name}-Stress', mesh=f'{name}-Nodes')
             read_data_displacements0_fluid_inner = ET.SubElement(participant_fluid_inner, "read-data", name=read_data, mesh=f'{name}-Nodes')
 
+            attributes = {
+                "direction": "read",
+                "from": "Solid",
+                "to": f'{name}-Nodes',
+                "constraint": "consistent"
+            }
+
             if(data["mapping"]["algorithm"] == "Nearest Projection"):
-                mapping_nearest_projection = ET.SubElement(participant_fluid_inner, "mapping:nearest-projection", direction="read", from_="Solid", to=f'{name}-Nodes', constraint="consistent") 
+                mapping_nearest_projection = ET.SubElement(participant_fluid_inner, "mapping:nearest-projection", attrib=attributes) # type: ignore
             elif(data["mapping"]["algorithm"] == "Nearest Neighbor"):
-                mapping_nearest_neighbor = ET.SubElement(participant_fluid_inner, "mapping:nearest-neighbor", direction="read", from_="Solid", to=f'{name}-Nodes', constraint="consistent") 
+                mapping_nearest_neighbor = ET.SubElement(participant_fluid_inner, "mapping:nearest-neighbor", attrib=attributes) # type: ignore
             
             if(data["log"]["vtk"]):
                 export_vtk = ET.SubElement(participant_fluid_inner, "export:vtk", directory=f'preCICE-{name}-output')
@@ -153,7 +166,12 @@ class PreCICEConfigGenerator:
             name = self.extract_participant(content)
             write_data = self.extract_values(content, "writeData")
 
-            use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "use-mesh", name=f'{name}-Nodes', from_=name)
+            attributes = {
+                "name": f'{name}-Nodes',
+                "from": name,
+            }
+            
+            use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "use-mesh", attrib=attributes) # type: ignore
             read_data_stress_inner_febio = ET.SubElement(participant_febio, "read-data", name=write_data, mesh="Solid")
 
             if(write_data != old_read_data):
@@ -165,10 +183,17 @@ class PreCICEConfigGenerator:
 
             read_data_stress_febio = ET.SubElement(participant_febio, "read-data", name="Stress", mesh="Solid")
 
+            attributes = {
+                "direction": "read",
+                "to": "Solid",
+                "from": f'{name}-Nodes',
+                "constraint": "consistent"
+            }
+
             if(data["mapping"]["algorithm"] == "Nearest Projection"):
-                mapping_nearest_projection = ET.SubElement(participant_febio, "mapping:nearest-projection", direction="read", to="Solid", from_=f'{name}-Nodes', constraint="consistent") 
+                mapping_nearest_projection = ET.SubElement(participant_febio, "mapping:nearest-projection", attrib=attributes) # type: ignore
             elif(data["mapping"]["algorithm"] == "Nearest Neighbor"):
-                mapping_nearest_neighbor = ET.SubElement(participant_febio, "mapping:nearest-neighbor", direction="read", to="Solid", from_=f'{name}-Nodes', constraint="consistent") 
+                mapping_nearest_neighbor = ET.SubElement(participant_febio, "mapping:nearest-neighbor", attrib=attributes) # type: ignore
             
             if(data["log"]["vtk"]):
                 export_vtk = ET.SubElement(participant_febio, "export:vtk", directory=f'preCICE-{name}-output')
@@ -178,10 +203,17 @@ class PreCICEConfigGenerator:
         for content in self.precice_contents:
             name = self.extract_participant(content)
 
+            attributes = {
+                "from": name,
+                "to": "FEBio",
+                "network": "ib0",
+                "exchange-directory": ".."
+            }
+
             if(data["network"]["type"] == "ib0"):
-                m2n_sockets = ET.SubElement(root, "m2n:sockets", from_=name, to="FEBio", network="ib0", exchange_directory="..")
+                m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
             elif(data["network"]["type"] == "eth0"):
-                m2n_sockets = ET.SubElement(root, "m2n:sockets", from_=name, to="FEBio", network="eth0", exchange_directory="..")
+                m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
 
 
         for content in self.precice_contents:
@@ -193,8 +225,15 @@ class PreCICEConfigGenerator:
             time_window_size = ET.SubElement(coupling_scheme_parallel_explicit, "time-window-size", value=data["coupling"]["timeStep"], method="fixed")
             max_time = ET.SubElement(coupling_scheme_parallel_explicit, "max-time", value=data["coupling"]["maxTime"])
             participants = ET.SubElement(coupling_scheme_parallel_explicit, "participants", first=name, second="FEBio")
-            exchange_stress_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", data=write_data, mesh=f'{name}-Nodes', from_=name, to="FEBio")
-            exchange_displacements0_to_fluid_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", data=read_data, mesh="Solid", from_="FEBio", to=name)
+
+            attributes = {
+                "data": write_data,
+                "mesh": f'{name}-Nodes',
+                "from": name,
+                "to": "FEBio"
+            }
+            exchange_stress_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
+            exchange_displacements0_to_fluid_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
 
 
 

@@ -70,8 +70,8 @@ class ZeroGenerator:
         """
 
 
-    def generate_rho(self, phase_name, geometries, explosive, rho=None):
-            if(explosive):
+    def generate_rho(self, phase_name, geometries, explosive_active, rho=None):
+            if explosive_active:
                 geometry_blocks = "\n".join(
                     f"{geometry['fileString']['name']}\n    {{\n        type            zeroGradient;\n    }}"
                     for geometry in geometries
@@ -121,14 +121,21 @@ class ZeroGenerator:
                 // ************************************************************************* //
                 """
             else:
-                return """
+                return f"""
+                /*--------------------------------*- C++ -*----------------------------------*\
+                | =========                 |                                                 |
+                | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+                |  \\    /   O peration     | Version:  2.3.0                                 |
+                |   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+                |    \\/     M anipulation  |                                                 |
+                \*---------------------------------------------------------------------------*/
                 FoamFile
-                {
+                {{
                     version     2.0;
                     format      ascii;
                     class       volScalarField;
                     object      rho.orig;
-                }
+                }}
                 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
                 dimensions      [1 -3 0 0 0 0 0];
@@ -136,20 +143,20 @@ class ZeroGenerator:
                 internalField   uniform 1.3;
 
                 boundaryField
-                {
+                {{
                     //- Set patchGroups for constraint patches
                     #includeEtc "caseDicts/setConstraintTypes"
 
-                    "ball.*"
-                    {
+                    {phase_name}
+                    {{
                         type            zeroGradient;
-                    }
-                }
+                    }}
+                }}
                 """
 
 
-    def generate_p(self, ambient, patch_name, explosive):
-        if(explosive):
+    def generate_p(self, ambient, patch_name, explosive_active):
+        if explosive_active:
             return f"""
             /*--------------------------------*- C++ -*----------------------------------*/
             FoamFile
@@ -220,8 +227,8 @@ class ZeroGenerator:
             }"""
 
 
-    def generate_point(self, patchName, explosive):
-        if(explosive):
+    def generate_point(self, patchName, explosive_active):
+        if explosive_active:
             return f"""
             /*--------------------------------*- C++ -*----------------------------------*/
             FoamFile
@@ -300,8 +307,8 @@ class ZeroGenerator:
         """
 
 
-    def generate_t(self, explosive):
-        if(explosive):
+    def generate_t(self, explosive_active):
+        if explosive_active:
             return f"""
             /*--------------------------------*- C++ -*----------------------------------*/
             FoamFile
@@ -373,8 +380,8 @@ class ZeroGenerator:
             }"""
 
 
-    def generate_u(self, patch_name, explosive):
-        if(explosive):
+    def generate_u(self, patch_name, explosive_active):
+        if explosive_active:
             return f"""
             /*--------------------------------*- C++ -*----------------------------------*/
             FoamFile
