@@ -70,7 +70,7 @@ class ZeroGenerator:
         """
 
 
-    def generate_rho(self, phase_name, geometries, explosive_active, rho=None):
+    def generate_rho(self, patch_name, phase_name, geometries, explosive_active, rho=None):
             if explosive_active:
                 geometry_blocks = "\n".join(
                     f"{geometry['fileString']['name']}\n    {{\n        type            zeroGradient;\n    }}"
@@ -147,7 +147,7 @@ class ZeroGenerator:
                     //- Set patchGroups for constraint patches
                     #includeEtc "caseDicts/setConstraintTypes"
 
-                    {phase_name}
+                    {patch_name}
                     {{
                         type            zeroGradient;
                     }}

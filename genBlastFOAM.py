@@ -103,7 +103,7 @@ class BlastFoamGenerator:
 
                     rho0 = self.data["phaseProperties"][phase]["coefficients"]["rho0"] 
             
-                file_content = zero_generator.generate_rho(phase_name, self.data["mesh"]["geometries"], explosive_active, rho0)
+                file_content = zero_generator.generate_rho(self.data["mesh"]["geometries"][0]["patchName"], phase_name, self.data["mesh"]["geometries"], explosive_active, rho0)
 
                 if(explosive_active):
                     file_path = os.path.join(zero_dir, file)
