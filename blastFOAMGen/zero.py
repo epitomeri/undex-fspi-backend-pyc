@@ -50,6 +50,11 @@ class ZeroGenerator:
                 type            zeroGradient;
             }}
         
+            "ball.*"
+            {{
+                type            zeroGradient;
+            }}
+
             outlet
             {{
                 type            zeroGradient;
@@ -95,6 +100,11 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
+
+            "ball.*"
+            {{
+                type            zeroGradient;
+            }}
         
             outlet
             {{
@@ -135,6 +145,12 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
+
+            "ball.*"
+            {{
+                type            zeroGradient;
+            }}
+
             {patch_name}
             {{
                 type            zeroGradient;
@@ -181,6 +197,13 @@ class ZeroGenerator:
                 type            fixedValue;
                 value           $internalField;
             }}
+
+            "ball.*"
+            {{
+            type            timeVaryingFixedDisplacement;
+            value           $internalField;
+            }}
+
             {patch_name}
             {{
                 type            fixedValue;
@@ -228,6 +251,12 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
+
+            "ball.*"
+            {{
+                type            zeroGradient;
+            }}
+            
             {patch_name}
             {{
                 type            zeroGradient;
@@ -271,6 +300,13 @@ class ZeroGenerator:
             {{
                 type            slip;
             }}
+
+            "ball.*"
+            {{
+                type            movingWallVelocity;
+                value           $internalField;
+            }}
+
             {patch_name}
             {{
                 type            movingWallVelocity;
