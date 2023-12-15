@@ -82,17 +82,17 @@ class PreCICEConfigGenerator:
         root = ET.SubElement(start, "solver-interface", dimensions="3")
 
         if(data["variables"]["fluidToSolid"] ==  "Stress"):
-            data_vector = ET.SubElement(root, "use-data", name="Stress")
+            data_vector = ET.SubElement(root, "data:vector", name="Stress")
 
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
-            stress_inner = ET.SubElement(root, "use-data", name=write_data)
+            stress_inner = ET.SubElement(root, "data:vector", name=write_data)
 
         old_read_data = ""
         for content in self.precice_contents:
             read_data = self.extract_values(content, "readData")
             if(read_data != old_read_data):
-                stress_outer = ET.SubElement(root, "use-data", name=read_data)
+                stress_outer = ET.SubElement(root, "data:vector", name=read_data)
                 old_read_data = read_data
 
 
@@ -133,7 +133,7 @@ class PreCICEConfigGenerator:
             use_mesh_fluid_inner_nodes = ET.SubElement(participant_fluid_inner, "use-mesh", name=f'{name}-Nodes', provide="yes")
 
             attributes = {
-                "name": "Fluid",
+                "name": "Solid",
                 "from": "FEBio",
             }
 
@@ -233,7 +233,7 @@ class PreCICEConfigGenerator:
                 "to": "FEBio"
             }
             exchange_stress_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
-            exchange_displacements0_to_fluid_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
+
 
 
 

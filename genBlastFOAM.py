@@ -213,6 +213,7 @@ class BlastFoamGenerator:
         clean_file_path = os.path.join(system_dir, "Allclean")
         with open(clean_file_path, 'w') as file:
             file.write(clean_content)
+            os.chmod(clean_file_path, 0o777)
             print(f"File created: {clean_file_path}")
 
         
