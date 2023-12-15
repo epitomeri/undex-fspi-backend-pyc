@@ -130,16 +130,16 @@ class PreCICEConfigGenerator:
             read_data = self.extract_values(content, "readData")
 
             participant_fluid_inner = ET.SubElement(root, "participant", name=name)
-            use_mesh_fluid_inner_nodes = ET.SubElement(participant_fluid_inner, "use-mesh", name=f'{name}', provide="yes")
+            use_mesh_fluid_inner_nodes = ET.SubElement(participant_fluid_inner, "use-mesh", name=f'{name}-Nodes', provide="yes")
 
             attributes = {
-                "name": f'{name}-Nodes',
-                "from": name,
+                "name": 'Solid',
+                "from": "FEBio",
             }
 
             use_mesh_solid_from_febio = ET.SubElement(participant_fluid_inner, "use-mesh", attrib=attributes) # type: ignore
-            read_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "read-data", name=f'{name}-Stress', mesh='Solid')
-            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name='Displacements0', mesh='Solid')
+            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=name, mesh=f'{name}-Nodes')
+            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "read-data", name='Displacements0', mesh=f'{name}-Nodes')
 
             attributes = {
                 "direction": "read",
@@ -167,13 +167,19 @@ class PreCICEConfigGenerator:
             write_data = self.extract_values(content, "writeData")
 
             attributes = {
-                "name": f'{name}-Nodes',
-                "from": name,
+                "name": 'Solid',
+                "from": "FEBio",
             }
             
             use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "use-mesh", attrib=attributes) # type: ignore
-            read_data_stress_inner_febio = ET.SubElement(participant_febio, "read-data", name=write_data, mesh="Solid")
+            read_data_stress_inner_febio = ET.SubElement(participant_febio, "write-data", name="Stress-Outer", mesh=f'{name}-Nodes')
+            read_data_stress_inner_febio = ET.SubElement(participant_febio, "read-data", name="Displacements0", mesh="Solid")
 
+            action_summation = ET.SubElement(participant_febio, "action:summation", timing="read-mapping-post", mesh="Solid")
+
+            source_data1 = ET.SubElement(action_summation, "source-data", name="Fluid-Outer-Stress")
+            source_data2 = ET.SubElement(action_summation, "source-data", name="Fluid-Inner-Stress")
+            target_data = ET.SubElement(action_summation, "target-data", name="Stress")
       
             
 
