@@ -112,7 +112,7 @@ class SystemGenerator:
         startTime       0;
         stopAt          endTime;
         endTime         {end_time};
-        deltaT          {time_step_size};
+        deltaT          {"true" if time_step_size else "false"};
         writeControl    adjustableRunTime;
         writeInterval   {write_interval};
         adjustTimeStep  {"yes" if adjust_time_step else "no"};

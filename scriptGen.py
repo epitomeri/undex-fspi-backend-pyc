@@ -40,6 +40,7 @@ echo "Cleaning complete!"
             # Write the script to hello.txt
             with open(os.path.join(project_base_path, 'Allclean'), 'w') as file:
                 file.write(clean_script)
+                os.chmod(os.path.join(project_base_path, 'Allclean'), 0o777)
 
     @staticmethod
     def gen_explosive_script(data, projectid):
@@ -83,7 +84,7 @@ runParallel -o $(getApplication)
             """
 
                 file.write(explosive_script)
-                os.chmod(os.path.join(project_base_path, f'run{data["participantName"]}'), 0o775)
+                os.chmod(os.path.join(project_base_path, f'run{data["participantName"]}'), 0o777)
 
         elif(data["phaseProperties"]["explosive"]["active"] == False):
             project_base_path = f'./projects/{projectid}'
@@ -107,7 +108,7 @@ runApplication decomposePar -copyZero
 runParallel -o $(getApplication)
 """
                 file.write(explosive_script)
-                os.chmod(os.path.join(project_base_path, f'run{data["participantName"]}'), 0o775)
+                os.chmod(os.path.join(project_base_path, f'run{data["participantName"]}'), 0o777)
 
         
     @staticmethod
@@ -121,7 +122,7 @@ febio-precice febio-case.dmp ../precice-config.xml -restart -dump 100
 """
     
             file.write(solid_script)
-            os.chmod(os.path.join(project_base_path, f'runSolid'), 0o775)
+            os.chmod(os.path.join(project_base_path, f'runSolid'), 0o777)
             
     @staticmethod
     def gen_run_script(projectid):
@@ -142,7 +143,7 @@ chmod 755 ./validation/createGraphs
 """
         
             file.write(run_script)
-            os.chmod(os.path.join(project_base_path, f'run'), 0o775)
+            os.chmod(os.path.join(project_base_path, f'run'), 0o777)
 
     @staticmethod
     def gen_validation(projectid):
@@ -208,7 +209,7 @@ createPlots $validation """
 echo Done"""
             
             file.write(graphs_script)
-            os.chmod(os.path.join(validation_path, f'createGraphs'), 0o775)
+            os.chmod(os.path.join(validation_path, f'createGraphs'), 0o777)
 
 
         shutil.copyfile('./resources/experiment.txt', './projects/' + projectid + '/validation/validationData/experiment.txt')
