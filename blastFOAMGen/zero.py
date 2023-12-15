@@ -150,11 +150,6 @@ class ZeroGenerator:
             {{
                 type            zeroGradient;
             }}
-
-            {patch_name}
-            {{
-                type            zeroGradient;
-            }}
         
             outlet
             {{
@@ -299,11 +294,6 @@ class ZeroGenerator:
                 value           $internalField;
             }}
 
-            {patch_name}
-            {{
-                type            movingWallVelocity;
-                value           $internalField;
-            }}
 
             outlet
             {{
