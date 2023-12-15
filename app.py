@@ -112,6 +112,7 @@ def handle_febio(projectid):
 @app.route('/run/<projectid>', methods=['GET']) # type: ignore
 def handle_run(projectid):
     if request.method == 'GET':
+        print("running" + projectid)
         project_base_path = f'./projects/{projectid}'
         ScriptGen.gen_run_script(projectid)
 

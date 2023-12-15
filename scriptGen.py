@@ -127,7 +127,7 @@ febio-precice febio-case.dmp ../precice-config.xml -restart -dump 100
     def gen_run_script(projectid):
         project_base_path = f'./projects/{projectid}'
         with open(os.path.join(project_base_path, f'run'), 'w') as file:
-            run_script = """cd ./projects/""" + projectid + """
+            run_script = """cd ./projects/'""" + projectid + """'
 chmod 755 runFluid-Outer
 chmod 755 runFluid-Inner
 chmod 755 runSolid

@@ -21,7 +21,12 @@ class BlastFoamGenerator:
             os.makedirs(constant_dir)
 
 
-        dynamic_mesh_content = constant_generator.generate_dynamic_mesh_dict(self.data["mesh"]["geometries"], self.data["mesh"]["geometries"][0]["patchName"])
+        patchName = ""
+        if(len(self.data["mesh"]["geometries"]) > 0):
+            patchName = self.data["mesh"]["geometries"][0]["patchName"]
+        else: 
+            patchName = "none"
+        dynamic_mesh_content = constant_generator.generate_dynamic_mesh_dict(self.data["mesh"]["geometries"], patchName)
         dynamic_mesh_file_path = os.path.join(constant_dir, "dynamicMeshDict")
         with open(dynamic_mesh_file_path, 'w') as file:
             file.write(dynamic_mesh_content)
