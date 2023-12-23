@@ -1,26 +1,41 @@
-import re
-from flask import Flask, request, jsonify, make_response, send_from_directory, send_file
+from math import log
+from flask import Flask, request, jsonify, make_response, send_from_directory, send_file, Response, stream_with_context
 from flask_cors import CORS
 import os
 import shutil
 from werkzeug.utils import secure_filename
 import zipfile
 import subprocess
+import xml.etree.ElementTree as ET
 
 from genXML import PreCICEConfigGenerator
 from genBlastFOAM import BlastFoamGenerator
 from scriptGen import ScriptGen
 
 from utils.formatXML import format_and_overwrite_xml_file
+from utils.fileParse import get_log_enabled, tail_file
 
 app = Flask(__name__)
-CORS(app)
+cors = CORS(app, resource={
+    r"/*":{
+        "origins":"*"
+    }
+})
 
 
 @app.before_request
 def before_request():
     if not os.path.exists('./projects'):
         os.makedirs('./projects')
+
+@app.after_request
+def handle_options(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Requested-With"
+
+    return response
+
 
 @app.route("/blastfoamgen/<projectid>", methods=['POST', 'OPTIONS'])  # type: ignore
 def handle_blastfoam(projectid):
@@ -85,20 +100,14 @@ def handle_febio(projectid):
 
             if file.filename.endswith('.zip'): #type: ignore
                 with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                    # Find the name of the first directory (assuming it's the only one)
                     root_folder = next(x for x in zip_ref.namelist() if x.endswith('/'))
 
-                    # Extract each file in the root folder
                     for item in zip_ref.namelist():
-                        # Check if the item is in the root folder and is a file
                         if item.startswith(root_folder) and not item.endswith('/'):
-                            # Define the target file path without the root folder part
                             target_file_path = os.path.join(directory_path, os.path.relpath(item, root_folder))
 
-                            # Ensure the target directory exists
                             os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
 
-                            # Extract the file
                             with zip_ref.open(item) as source, open(target_file_path, 'wb') as target:
                                 shutil.copyfileobj(source, target)
 
@@ -108,6 +117,85 @@ def handle_febio(projectid):
             ScriptGen.gen_solid_script(projectid)
             return 'File uploaded successfully', 200
     
+
+@app.route('/logfiles/<projectid>', methods=['GET']) # type: ignore
+def handle_getlogfiles(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        project_base = f'./projects/{projectid}'
+    
+
+        log_files = {
+            
+        }
+
+
+
+        xml_config_path = f'{project_base}/precice-config.xml'
+        log_file_name = ""
+
+        if os.path.exists(xml_config_path):
+            
+            enabled, lfm = get_log_enabled(xml_config_path)
+            log_file_name = lfm if lfm is not None else log_file_name
+
+            
+            for raw_case in os.listdir(project_base):
+                case_path = os.path.join(project_base, raw_case)
+                if(os.path.isdir(case_path)) and raw_case != 'validation':
+                    
+                    if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
+                        log_files[raw_case] = []
+                        log_files[raw_case].append('decomposePar')
+                        log_files[raw_case].append('rotateConservativeFields')
+                        log_files[raw_case].append('blastFoam')
+                    
+                    if raw_case == "Solid":
+                        log_files[raw_case] = []
+                
+                    if enabled == 'True': # type: ignore
+                        log_files[raw_case].append(log_file_name)
+
+                    
+
+        
+        return jsonify(log_files), 200
+
+
+@app.route('/logfile/<projectid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getlogfile(projectid, casename, logfilename):
+
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        file_path = f'./projects/{projectid}/{casename}/{logfilename}'
+
+        return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
+        
+        """ project_base = f'./projects/{projectid}'
+
+        cases = [f for f in os.listdir(project_base) if os.path.isdir(os.path.join(project_base, f))]
+        cases.remove('validation')
+
+        if(logfilename in cases):
+
+            xml_config_path = f'{project_base}/precice-config.xml'
+            _, case_log_filename = get_log_enabled(xml_config_path)
+
+            
+            case_log_path = f'{project_base}/{logfilename}/{case_log_filename}'
+            return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream')
+
+        elif (logfilename == 'Biomechanics'):
+            case_log_path = f'{project_base}/Solid/febio-precice.log'
+            return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream')
+
+        else:
+            case_log_path = f'{project_base}/log.{logfilename}'
+            return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream') """
+        
+
 
 @app.route('/run/<projectid>', methods=['GET']) # type: ignore
 def handle_run(projectid):
