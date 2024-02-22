@@ -43,17 +43,27 @@ def handle_blastfoam(projectid):
         return _build_cors_preflight_response()
     elif request.method == 'POST':
         data = request.get_json()
+
+        projects_dir = f'./projects/{projectid}'
+        if not os.path.exists(projects_dir):
+            os.makedirs(projects_dir)
         
-        blastFoamGen = BlastFoamGenerator(data, projectid)
-        output_folder_path = blastFoamGen.generate_all()
+        for blastfoam_file in data:
+            file_path = blastfoam_file['filePath']
+            file_directory = f'{projects_dir}/{os.path.dirname(file_path)}'
+            if not os.path.exists(file_directory):
+                os.makedirs(file_directory)
+            
+            content = blastfoam_file['content']
+            with open(f'{projects_dir}/{file_path}', 'w') as file:
+                file.write(content)
+            
 
-        zip_file_name = os.path.basename(output_folder_path) + '.zip'
+
+        zip_file_name = os.path.basename(projects_dir) + '.zip'
         zip_file_path = os.path.join('./tmp', secure_filename(zip_file_name)) # type: ignore
-        shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=output_folder_path)
+        shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=projects_dir)
 
-        ScriptGen.gen_clean_script(projectid)
-        ScriptGen.gen_explosive_script(data, projectid)
-        ScriptGen.gen_validation(projectid)
         return send_file(zip_file_path, as_attachment=True)
 
 @app.route('/precicegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
