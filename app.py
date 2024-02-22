@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 import zipfile
 import subprocess
 import xml.etree.ElementTree as ET
+import json
 
 from genXML import PreCICEConfigGenerator
 from genBlastFOAM import BlastFoamGenerator
@@ -42,13 +43,24 @@ def handle_blastfoam(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
-        data = request.get_json()
+        files = json.loads(request.form.get('files'))
+        
+
 
         projects_dir = f'./projects/{projectid}'
+
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
+
+        for case_name in request.files:
+            
+            mesh = request.files.get(case_name)
+            if not os.path.exists(f'{projects_dir}/{mesh.name}/constant/geometry'):
+                os.makedirs(f'{projects_dir}/{mesh.name}/constant/geometry')
+            mesh.save(f'{projects_dir}/{mesh.name}/constant/geometry/{mesh.filename}')
+
         
-        for blastfoam_file in data:
+        for blastfoam_file in files:
             file_path = blastfoam_file['filePath']
             file_directory = f'{projects_dir}/{os.path.dirname(file_path)}'
             if not os.path.exists(file_directory):
