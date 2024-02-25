@@ -11,6 +11,7 @@ import json
 
 from genXML import PreCICEConfigGenerator
 from genBlastFOAM import BlastFoamGenerator
+from genFebio import FebioConfigGenerator
 from scriptGen import ScriptGen
 
 from utils.formatXML import format_and_overwrite_xml_file
@@ -43,7 +44,7 @@ def handle_blastfoam(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
-        files = json.loads(request.form.get('files'))
+        files = json.loads(request.form.get('files')) # type: ignore
         
 
 
@@ -55,9 +56,9 @@ def handle_blastfoam(projectid):
         for case_name in request.files:
             
             mesh = request.files.get(case_name)
-            if not os.path.exists(f'{projects_dir}/{mesh.name}/constant/geometry'):
-                os.makedirs(f'{projects_dir}/{mesh.name}/constant/geometry')
-            mesh.save(f'{projects_dir}/{mesh.name}/constant/geometry/{mesh.filename}')
+            if not os.path.exists(f'{projects_dir}/{mesh.name}/constant/geometry'): # type: ignore
+                os.makedirs(f'{projects_dir}/{mesh.name}/constant/geometry') # type: ignore
+            mesh.save(f'{projects_dir}/{mesh.name}/constant/geometry/{mesh.filename}') # type: ignore
 
         
         for blastfoam_file in files:
@@ -69,7 +70,6 @@ def handle_blastfoam(projectid):
             content = blastfoam_file['content']
             with open(f'{projects_dir}/{file_path}', 'w') as file:
                 file.write(content)
-            
 
 
         zip_file_name = os.path.basename(projects_dir) + '.zip'
@@ -77,6 +77,47 @@ def handle_blastfoam(projectid):
         shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=projects_dir)
 
         return send_file(zip_file_path, as_attachment=True)
+
+@app.route('/febiogen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_febiogen(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'POST':
+
+        directory_path = f'./projects/{projectid}/Solid'
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
+        file = ''
+        mesh_path = ''
+        boundary_path = ''
+
+        if 'meshFile' in request.files:
+            file = request.files['meshFile']
+            file.save(f'./projects/{projectid}/Solid/{file.filename}')
+            mesh_path = f'./projects/{projectid}/Solid/{file.filename}'
+        if 'boundaryConditionsFile' in request.files:
+            file = request.files['boundaryConditionsFile']
+            file.save(f'./projects/{projectid}/Solid/{file.filename}')
+            boundary_path = f'./projects/{projectid}/Solid/{file.filename}'
+
+        solver_case_json = request.form.get('solverCase')
+        data = json.loads(solver_case_json) # type: ignore
+        
+
+        generator = FebioConfigGenerator()
+        
+
+        output_file_path = generator.generate_xml(data, projectid, mesh_path, boundary_path)
+
+        directory = os.path.dirname(output_file_path)
+        filename = os.path.basename(output_file_path)
+
+        
+
+        ScriptGen.gen_clean_script(projectid)
+        ScriptGen.gen_solid_script(projectid)
+        return send_from_directory(directory, filename, as_attachment=True) 
 
 @app.route('/precicegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_precice(projectid):
@@ -169,9 +210,9 @@ def handle_getlogfiles(projectid):
                     
                     if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
                         log_files[raw_case] = []
-                        log_files[raw_case].append('decomposePar')
-                        log_files[raw_case].append('rotateConservativeFields')
-                        log_files[raw_case].append('blastFoam')
+                        log_files[raw_case].append('log.decomposePar')
+                        log_files[raw_case].append('log.rotateConservativeFields')
+                        log_files[raw_case].append('log.blastFoam')
                     
                     if raw_case == "Solid":
                         log_files[raw_case] = []
@@ -225,6 +266,9 @@ def handle_run(projectid):
         print("running" + projectid)
         project_base_path = f'./projects/{projectid}'
         ScriptGen.gen_run_script(projectid)
+
+        ScriptGen.gen_solid_script(projectid)
+        ScriptGen.gen_fluid_script(projectid)
 
         subprocess.run(['bash', f'{project_base_path}/Allclean'])
         subprocess.run(['bash', f'{project_base_path}/run'])

@@ -43,8 +43,8 @@ class PreCICEConfigGenerator:
         # Return None if 'participant' is not found
         return ""
 
-    def load_precice_contents(self):
-        for toor, dirs, files in os.walk("./projects"):
+    def load_precice_contents(self, directory):
+        for toor, dirs, files in os.walk(directory):
             for file in files:
                 if file == "preciceDict":
                     file_path = os.path.join(toor, file)
@@ -66,7 +66,7 @@ class PreCICEConfigGenerator:
 
 
 
-        self.load_precice_contents()
+        self.load_precice_contents(projects_dir)
 
         start = ET.Element("precice-configuration")
 
@@ -81,18 +81,32 @@ class PreCICEConfigGenerator:
 
         root = ET.SubElement(start, "solver-interface", dimensions="3")
 
-        if(data["variables"]["fluidToSolid"] ==  "Stress"):
-            data_vector = ET.SubElement(root, "data:vector", name="Stress")
+        dataType = ""
+        if (data["variables"]["fluidToSolid"] == "Stress"):
+            dataType = "data:vector"
+        elif (data["variables"]["fluidToSolid"] == "Pressure"):
+            dataType = "data:scalar"
+
+        fluid_solid_type = ""
+        if (data["variables"]["fluidToSolid"] == "Stress"):
+            fluid_solid_type = "Stress"
+        elif (data["variables"]["fluidToSolid"] == "Pressure"):
+            fluid_solid_type = "Pressure"
+
+
+        data_vector = ET.SubElement(root, dataType, name=data["variables"]["fluidToSolid"])
+
+
 
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
-            stress_inner = ET.SubElement(root, "data:vector", name=write_data)
+            stress_inner = ET.SubElement(root, dataType, name=write_data)
 
         old_read_data = ""
         for content in self.precice_contents:
             read_data = self.extract_values(content, "readData")
             if(read_data != old_read_data):
-                stress_outer = ET.SubElement(root, "data:vector", name=read_data)
+                stress_outer = ET.SubElement(root, dataType, name=read_data)
                 old_read_data = read_data
 
 
@@ -108,6 +122,7 @@ class PreCICEConfigGenerator:
 
 
         mesh_solid = ET.SubElement(root, "mesh", name="Solid")
+        mesh_fluid_solid = ET.SubElement(mesh_solid, "use-data", name=data["variables"]["fluidToSolid"])
         if(data["variables"]["fluidToSolid"] ==  "Stress"):
             data_vector = ET.SubElement(mesh_solid, "use-data", name="Stress")
 
@@ -140,7 +155,8 @@ class PreCICEConfigGenerator:
             }
 
             use_mesh_solid_from_febio = ET.SubElement(participant_fluid_inner, "use-mesh", attrib=attributes) # type: ignore
-            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=f'{name}-Stress', mesh=f'{name}-Nodes')
+
+            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=f'{name}-{data["variables"]["fluidToSolid"]}', mesh=f'{name}-Nodes')
             write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "read-data", name='Displacements0', mesh=f'{name}-Nodes')
 
             attributes = {
@@ -150,10 +166,10 @@ class PreCICEConfigGenerator:
                 "constraint": "consistent"
             }
 
-            if(data["mapping"]["algorithm"] == "Nearest Projection"):
-                mapping_nearest_projection = ET.SubElement(participant_fluid_inner, "mapping:nearest-projection", attrib=attributes) # type: ignore
-            elif(data["mapping"]["algorithm"] == "Nearest Neighbor"):
-                mapping_nearest_neighbor = ET.SubElement(participant_fluid_inner, "mapping:nearest-neighbor", attrib=attributes) # type: ignore
+
+            mapping = ET.SubElement(participant_fluid_inner, f'mapping:{data["mapping"]["algorithm"]}', attrib=attributes) # type: ignore
+
+
             
             if(data["log"]["vtk"]):
                 export_vtk = ET.SubElement(participant_fluid_inner, "export:vtk", directory=f'preCICE-{name}-output')
@@ -179,7 +195,7 @@ class PreCICEConfigGenerator:
             write_data = self.extract_values(content, "writeData")
 
             attributes = {
-                "name": f'{name}-Stress',
+                "name": f'{name}-{data["variables"]["fluidToSolid"]}',
                 "mesh": 'Solid',
             }
             
@@ -199,12 +215,24 @@ class PreCICEConfigGenerator:
             name = self.extract_participant(content)
             write_data = self.extract_values(content, "writeData")
         
-            source_data1 = ET.SubElement(action_summation, "source-data", name=f'{name}-Stress')
+            source_data1 = ET.SubElement(action_summation, "source-data", name=f'{name}-{data["variables"]["fluidToSolid"]}')
         
-        target_data = ET.SubElement(action_summation, "target-data", name="Stress")
+        target_data = ET.SubElement(action_summation, "target-data", name=data["variables"]["fluidToSolid"])
 
         
-        read_data_name = ET.SubElement(participant_febio, "read-data", name="Stress", mesh="Solid") # type: ignore
+        read_data_name = ET.SubElement(participant_febio, "read-data", name=data["variables"]["fluidToSolid"], mesh="Solid") # type: ignore
+
+        for content in self.precice_contents:
+            name = self.extract_participant(content)
+
+            attributes = {
+                "direction": "read",
+                "to": "Solid",
+                "from": f'{name}-Nodes',
+                "constraint": "consistent"
+            }
+
+            mapping = ET.SubElement(participant_febio, f'mapping:{data["mapping"]["algorithm"]}', attrib=attributes) # type: ignore
 
 
         old_read_data = ""
@@ -226,8 +254,8 @@ class PreCICEConfigGenerator:
             elif(data["mapping"]["algorithm"] == "Nearest Neighbor"):
                 mapping_nearest_neighbor = ET.SubElement(participant_febio, "mapping:nearest-neighbor", attrib=attributes) # type: ignore
             
-            if(data["log"]["vtk"]):
-                export_vtk = ET.SubElement(participant_febio, "export:vtk", directory=f'preCICE-{name}-output')
+        if(data["log"]["vtk"]):
+            export_vtk = ET.SubElement(participant_febio, "export:vtk", directory=f'preCICE-FEBio-output')
 
 
 
@@ -237,14 +265,12 @@ class PreCICEConfigGenerator:
             attributes = {
                 "from": name,
                 "to": "FEBio",
-                "network": "ib0",
+                "network": str(data["network"]["type"]),
                 "exchange-directory": ".."
             }
 
-            if(data["network"]["type"] == "ib0"):
-                m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
-            elif(data["network"]["type"] == "eth0"):
-                m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
+            if(data["network"]["type"] == "default"): del attributes["network"]
+            m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
 
 
         for content in self.precice_contents:
@@ -252,10 +278,17 @@ class PreCICEConfigGenerator:
             write_data = self.extract_values(content, "writeData")
             read_data = self.extract_values(content, "readData")
 
-            coupling_scheme_parallel_explicit = ET.SubElement(root, "coupling-scheme:parallel-explicit")
-            time_window_size = ET.SubElement(coupling_scheme_parallel_explicit, "time-window-size", value=data["coupling"]["timeStep"], method="fixed")
+            coupling_scheme_parallel_explicit = ET.SubElement(root, f'coupling-scheme:{data["coupling"]["scheme"]}')
+
+            if (data["coupling"]["scheme"] == "parallel-explicit"):
+                time_window_size = ET.SubElement(coupling_scheme_parallel_explicit, "time-window-size", value=data["coupling"]["timeStep"], method="fixed")
+                
+            elif (data["coupling"]["scheme"] == "serial-explicit"):
+                time_window_size = ET.SubElement(coupling_scheme_parallel_explicit, "time-window-size", value="-1", method="first-participant")
+
             max_time = ET.SubElement(coupling_scheme_parallel_explicit, "max-time", value=data["coupling"]["maxTime"])
-            participants = ET.SubElement(coupling_scheme_parallel_explicit, "participants", first=name, second="FEBio")
+            participants = ET.SubElement(coupling_scheme_parallel_explicit, "participants", first="FEBio", second=name)
+
 
             attributes = {
                 "data": write_data,

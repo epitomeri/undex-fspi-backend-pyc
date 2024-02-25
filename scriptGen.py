@@ -125,11 +125,37 @@ febio-precice febio-case.dmp ../precice-config.xml -restart -dump 100 > febio-pr
     
             file.write(solid_script)
             os.chmod(os.path.join(project_base_path, f'runSolid'), 0o777)
-            
+
+
+    @staticmethod
+    def gen_fluid_script(projectid):
+        project_base_path = f'./projects/{projectid}'
+        with open(os.path.join(project_base_path, f'runFluid-Outer'), 'w') as file:
+            solid_script = """
+cd Fluid-Outer
+./Allclean
+./Allrun
+"""
+    
+            file.write(solid_script)
+            os.chmod(os.path.join(project_base_path, f'runFluid-Outer'), 0o755)
+
+        with open(os.path.join(project_base_path, f'runFluid-Inner'), 'w') as file:
+            solid_script = """
+cd Fluid-Inner
+./Allclean
+./Allrun
+"""
+    
+            file.write(solid_script)
+            os.chmod(os.path.join(project_base_path, f'runFluid-Inner'), 0o755)
+
+
+        
     @staticmethod
     def gen_run_script(projectid):
         project_base_path = f'./projects/{projectid}'
-        with open(os.path.join(project_base_path, f'run'), 'w') as file:
+        with open(os.path.join(project_base_path, f'run.sh'), 'w') as file:
             run_script = """cd ./projects/'""" + projectid + """'
 chmod 755 runFluid-Outer
 chmod 755 runFluid-Inner
@@ -145,7 +171,7 @@ chmod 755 ./validation/createGraphs
 """
         
             file.write(run_script)
-            os.chmod(os.path.join(project_base_path, f'run'), 0o777)
+            os.chmod(os.path.join(project_base_path, f'run.sh'), 0o777)
 
     @staticmethod
     def gen_validation(projectid):
