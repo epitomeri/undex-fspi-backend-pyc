@@ -138,15 +138,15 @@ class FebioConfigGenerator():
             
 
 
-
+        file_path = f'./projects/{projectid}/Solid/febio-case.feb'
 
         #Writing to tree
 
         tree = ET.ElementTree(febio_spec)
 
-        tree.write(f'./projects/{projectid}/febio-config.xml', xml_declaration=True, encoding='utf-8')
+        tree.write(file_path, xml_declaration=True, encoding='utf-8')
         
-        format_and_overwrite_xml_file(f'./projects/{projectid}/febio-config.xml')
+        format_and_overwrite_xml_file(file_path)
 
 
         
@@ -173,7 +173,7 @@ class FebioConfigGenerator():
 
         #Inserting boundary data into febio-config.xml
         source_file_path = meshPath
-        target_file_path = f'./projects/{projectid}/febio-config.xml'
+        target_file_path = file_path
         temp_file_path = target_file_path + '.tmp'
 
         insert_tag = '<SurfaceData name="'
@@ -211,7 +211,7 @@ class FebioConfigGenerator():
 
 
         
-        return f'./projects/{projectid}/Solid/febio-case.feb'
+        return file_path
             
 
 
