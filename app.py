@@ -275,7 +275,7 @@ def handle_run(projectid):
         ScriptGen.gen_fluid_script(projectid)
 
         subprocess.run(['bash', f'{project_base_path}/Allclean'])
-        subprocess.run(['bash', f'{project_base_path}/run'])
+        subprocess.run(['bash', f'{project_base_path}/run.sh'])
 
         return 'Simulation started', 200
 

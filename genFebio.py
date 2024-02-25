@@ -101,8 +101,8 @@ class FebioConfigGenerator():
                 mass_lumping = ET.SubElement(solver, "mass_lumping")
                 mass_lumping.text = step['massLumping']
 
-                dyn_dumping = ET.SubElement(solver, "dyn_dumping")
-                dyn_dumping.text = step['dynamicLumping']
+                dyn_damping = ET.SubElement(solver, "dyn_damping")
+                dyn_damping.text = step['dynamicLumping']
 
             plot_stride = ET.SubElement(control, "plot_stride")
             plot_stride.text = str(step['plotStride'])
