@@ -211,7 +211,7 @@ class FebioConfigGenerator():
 
 
         
-        return f'./projects/{projectid}/febio-config.xml'
+        return f'./projects/{projectid}/Solid/febio-config.xml'
             
 
 

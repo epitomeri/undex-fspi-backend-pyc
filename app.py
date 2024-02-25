@@ -92,14 +92,18 @@ def handle_febiogen(projectid):
         mesh_path = ''
         boundary_path = ''
 
+
+        if not os.path.exists(f'./tmp/{projectid}/Solid/'):
+            os.makedirs(f'./tmp/{projectid}/Solid/')
+
         if 'meshFile' in request.files:
             file = request.files['meshFile']
-            file.save(f'./projects/{projectid}/Solid/{file.filename}')
-            mesh_path = f'./projects/{projectid}/Solid/{file.filename}'
+            file.save(f'./tmp/{projectid}/Solid/{file.filename}')
+            mesh_path = f'./tmp/{projectid}/Solid/{file.filename}'
         if 'boundaryConditionsFile' in request.files:
             file = request.files['boundaryConditionsFile']
-            file.save(f'./projects/{projectid}/Solid/{file.filename}')
-            boundary_path = f'./projects/{projectid}/Solid/{file.filename}'
+            file.save(f'./tmp/{projectid}/Solid/{file.filename}')
+            boundary_path = f'./tmp/{projectid}/Solid/{file.filename}'
 
         solver_case_json = request.form.get('solverCase')
         data = json.loads(solver_case_json) # type: ignore

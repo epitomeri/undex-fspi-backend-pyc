@@ -120,7 +120,7 @@ runParallel -o $(getApplication)
             solid_script = """#!/bin/bash
 echo "Preparing and running the Solid participant..."
 cd Solid
-febio-precice febio-case.dmp ../precice-config.xml -restart -dump 100 > febio-precice.log 
+febio-precice febio-case.feb ../precice-config.xml -restart -dump 100 > febio-precice.log 
 """
     
             file.write(solid_script)
