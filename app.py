@@ -68,8 +68,11 @@ def handle_blastfoam(projectid):
                 os.makedirs(file_directory)
             
             content = blastfoam_file['content']
+            
             with open(f'{projects_dir}/{file_path}', 'w') as file:
                 file.write(content)
+                if 'Allclean' in file_path or 'Allrun' in file_path:
+                    os.chmod(f'{projects_dir}/{file_path}', 0o777)
 
 
         zip_file_name = os.path.basename(projects_dir) + '.zip'
