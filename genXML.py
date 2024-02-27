@@ -91,8 +91,6 @@ class PreCICEConfigGenerator:
 
         data_vector = ET.SubElement(root, dataType, name=data["variables"]["fluidToSolid"])
 
-        print(data_vector)
-
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
             stress_inner = ET.SubElement(root, dataType, name=write_data)
@@ -101,8 +99,12 @@ class PreCICEConfigGenerator:
         for content in self.precice_contents:
             read_data = self.extract_values(content, "readData")
             if(read_data != old_read_data):
-                stress_outer = ET.SubElement(root, dataType, name=read_data)
+                temp_type = dataType
+                if (read_data == "Displacements0"):
+                    temp_type = "data:vector"
+                stress_outer = ET.SubElement(root, temp_type, name=read_data)
                 old_read_data = read_data
+                temp_type = dataType
 
         for content in self.precice_contents:
             name = self.extract_participant(content)
