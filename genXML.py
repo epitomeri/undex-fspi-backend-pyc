@@ -5,12 +5,9 @@ import os
 
 from jinja2 import Undefined
 
-
-
 class PreCICEConfigGenerator:
     def __init__(self):
         self.precice_contents = []
-
 
     def extract_values(self, text, key):
         """
@@ -64,14 +61,11 @@ class PreCICEConfigGenerator:
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
 
-
-
         self.load_precice_contents(projects_dir)
 
         print(self.precice_contents)
 
         start = ET.Element("precice-configuration")
-
 
         log = ET.SubElement(start, "log", enabled=str(data["log"]["fileEnabled"]))
 
@@ -84,7 +78,7 @@ class PreCICEConfigGenerator:
         root = ET.SubElement(start, "solver-interface", dimensions="3")
 
         dataType = ""
-        if (data["variables"]["fluidToSolid"] == "Stress"):
+        if (data["variables"]["fluidToSolid"] == "Stress" or data["variables"]["fluidToSolid"] == "Displacements0"):
             dataType = "data:vector"
         elif (data["variables"]["fluidToSolid"] == "Pressure"):
             dataType = "data:scalar"
@@ -95,10 +89,9 @@ class PreCICEConfigGenerator:
         elif (data["variables"]["fluidToSolid"] == "Pressure"):
             fluid_solid_type = "Pressure"
 
-
         data_vector = ET.SubElement(root, dataType, name=data["variables"]["fluidToSolid"])
 
-
+        print(data_vector)
 
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
@@ -111,7 +104,6 @@ class PreCICEConfigGenerator:
                 stress_outer = ET.SubElement(root, dataType, name=read_data)
                 old_read_data = read_data
 
-
         for content in self.precice_contents:
             name = self.extract_participant(content)
             name += "-Nodes" # type: ignore
@@ -120,8 +112,6 @@ class PreCICEConfigGenerator:
             mesh_fluid_outer_nodes = ET.SubElement(root, "mesh", name=name)
             use_data_stress_outer_fluid = ET.SubElement(mesh_fluid_outer_nodes, "use-data", name=write_data)
             use_data_displacements0_fluid = ET.SubElement(mesh_fluid_outer_nodes, "use-data", name=read_data)
-
-
 
         mesh_solid = ET.SubElement(root, "mesh", name="Solid")
         mesh_fluid_solid = ET.SubElement(mesh_solid, "use-data", name=data["variables"]["fluidToSolid"])
@@ -139,14 +129,10 @@ class PreCICEConfigGenerator:
                 stress_outer = ET.SubElement(mesh_solid, "use-data", name=read_data)
                 old_read_data = read_data
 
-
-
         for content in self.precice_contents:
             name = self.extract_participant(content)
             write_data = self.extract_values(content, "writeData")
             read_data = self.extract_values(content, "readData")
-
-
 
             participant_fluid_inner = ET.SubElement(root, "participant", name=name)
             use_mesh_fluid_inner_nodes = ET.SubElement(participant_fluid_inner, "use-mesh", name=f'{name}-Nodes', provide="yes")
@@ -168,15 +154,10 @@ class PreCICEConfigGenerator:
                 "constraint": "consistent"
             }
 
-
             mapping = ET.SubElement(participant_fluid_inner, f'mapping:{data["mapping"]["algorithm"]}', attrib=attributes) # type: ignore
-
-
             
             if(data["log"]["vtk"]):
                 export_vtk = ET.SubElement(participant_fluid_inner, "export:vtk", directory=f'preCICE-{name}-output')
-
-
 
         participant_febio = ET.SubElement(root, "participant", name="FEBio")
         use_mesh_solid_febio = ET.SubElement(participant_febio, "use-mesh", name="Solid", provide="yes")
@@ -259,8 +240,6 @@ class PreCICEConfigGenerator:
         if(data["log"]["vtk"]):
             export_vtk = ET.SubElement(participant_febio, "export:vtk", directory=f'preCICE-FEBio-output')
 
-
-
         for content in self.precice_contents:
             name = self.extract_participant(content)
 
@@ -273,7 +252,6 @@ class PreCICEConfigGenerator:
 
             if(data["network"]["type"] == "default"): del attributes["network"]
             m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
-
 
         for content in self.precice_contents:
             name = self.extract_participant(content)
@@ -308,9 +286,6 @@ class PreCICEConfigGenerator:
             }
 
             exchange_stress_outer = ET.SubElement(coupling_scheme_parallel_explicit, "exchange", attrib=attributes) # type: ignore
-
-
-
 
         tree = ET.ElementTree(start)
 
