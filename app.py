@@ -210,26 +210,28 @@ def handle_getlogfiles(projectid):
             enabled, lfm = get_log_enabled(xml_config_path)
             log_file_name = lfm if lfm is not None else log_file_name
 
-            
             for raw_case in os.listdir(project_base):
-                case_path = os.path.join(project_base, raw_case)
-                if(os.path.isdir(case_path)) and raw_case != 'validation':
-                    
-                    if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
-                        log_files[raw_case] = []
-                        log_files[raw_case].append('log.decomposePar')
-                        log_files[raw_case].append('log.rotateConservativeFields')
-                        log_files[raw_case].append('log.blastFoam')
-                    
-                    if raw_case == "Solid":
-                        log_files[raw_case] = []
-                
-                    if enabled == 'True': # type: ignore
-                        log_files[raw_case].append(log_file_name)
+                if raw_case != "precice-run":
+                    case_path = os.path.join(project_base, raw_case)
+                    if(os.path.isdir(case_path)) and raw_case != 'validation':
+                        
+                        if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
+                            log_files[raw_case] = []
+                            log_files[raw_case].append('log.blockMesh')
+                            log_files[raw_case].append('log.snappyHexMesh')
+                            log_files[raw_case].append('log.decomposePar')
+                            log_files[raw_case].append('log.surfaceFeatures')
+                            log_files[raw_case].append('log.rotateConservativeFields')
+                            log_files[raw_case].append('log.blastFoam')
 
+                        
+                        if raw_case == "Solid":
+                            log_files[raw_case] = []
+                            log_files[raw_case].append('febio-precice.log')
                     
-
-        
+                        if enabled == 'True': # type: ignore
+                            log_files[raw_case].append(log_file_name)
+            
         return jsonify(log_files), 200
 
 

@@ -68,6 +68,8 @@ class PreCICEConfigGenerator:
 
         self.load_precice_contents(projects_dir)
 
+        print(self.precice_contents)
+
         start = ET.Element("precice-configuration")
 
 
@@ -156,7 +158,7 @@ class PreCICEConfigGenerator:
 
             use_mesh_solid_from_febio = ET.SubElement(participant_fluid_inner, "use-mesh", attrib=attributes) # type: ignore
 
-            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=f'{name}-{data["variables"]["fluidToSolid"]}', mesh=f'{name}-Nodes')
+            write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "write-data", name=write_data, mesh=f'{name}-Nodes')
             write_data_fluid_inner_stress = ET.SubElement(participant_fluid_inner, "read-data", name='Displacements0', mesh=f'{name}-Nodes')
 
             attributes = {
@@ -195,8 +197,8 @@ class PreCICEConfigGenerator:
             write_data = self.extract_values(content, "writeData")
 
             attributes = {
-                "name": f'{name}-{data["variables"]["fluidToSolid"]}',
-                "mesh": 'Solid',
+                "name": write_data,
+                "mesh": 'Solid'
             }
             
             use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "read-data", attrib=attributes) # type: ignore
@@ -215,7 +217,7 @@ class PreCICEConfigGenerator:
             name = self.extract_participant(content)
             write_data = self.extract_values(content, "writeData")
         
-            source_data1 = ET.SubElement(action_summation, "source-data", name=f'{name}-{data["variables"]["fluidToSolid"]}')
+            source_data1 = ET.SubElement(action_summation, "source-data", name=write_data)
         
         target_data = ET.SubElement(action_summation, "target-data", name=data["variables"]["fluidToSolid"])
 
