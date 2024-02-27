@@ -120,6 +120,7 @@ runParallel -o $(getApplication)
             solid_script = """#!/bin/bash
 echo "Preparing and running the Solid participant..."
 cd Solid
+./Allclean
 febio-precice febio-case.feb ../precice-config.xml > febio-precice.log 
 """
     
@@ -130,6 +131,7 @@ febio-precice febio-case.feb ../precice-config.xml > febio-precice.log
     @staticmethod
     def gen_fluid_script(projectid):
         project_base_path = f'./projects/{projectid}'
+        solid_base_path = f'./projects/{projectid}/Solid'
         with open(os.path.join(project_base_path, f'runFluid-Outer'), 'w') as file:
             solid_script = """
 cd Fluid-Outer
@@ -149,6 +151,16 @@ cd Fluid-Inner
     
             file.write(solid_script)
             os.chmod(os.path.join(project_base_path, f'runFluid-Inner'), 0o755)
+            
+        with open(os.path.join(solid_base_path, f'AllClean'), 'w') as file:
+            clean_script = """
+rm *.log
+rm *.xplt
+"""
+    
+            file.write(solid_script)
+            os.chmod(os.path.join(solid_base_path, f'AllClean'), 0o755)
+            
 
 
         
