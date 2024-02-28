@@ -159,7 +159,7 @@ rm *.xplt
 """
     
             file.write(solid_script)
-            os.chmod(os.path.join(solid_base_path, f'AllClean'), 0o755)
+            os.chmod(os.path.join(solid_base_path, f'Allclean'), 0o755)
             
 
 
