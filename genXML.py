@@ -255,7 +255,7 @@ class PreCICEConfigGenerator:
             if(data["network"]["type"] == "default"): del attributes["network"]
             m2n_sockets = ET.SubElement(root, "m2n:sockets", attrib=attributes) # type: ignore
 
-        for content in self.precice_contents:
+        for i, content in enumerate(self.precice_contents):
             name = self.extract_participant(content)
             write_data = self.extract_values(content, "writeData")
             read_data = self.extract_values(content, "readData")
@@ -269,8 +269,10 @@ class PreCICEConfigGenerator:
                 time_window_size = ET.SubElement(coupling_scheme_parallel_explicit, "time-window-size", value="-1", method="first-participant")
 
             max_time = ET.SubElement(coupling_scheme_parallel_explicit, "max-time", value=data["coupling"]["maxTime"])
-            participants = ET.SubElement(coupling_scheme_parallel_explicit, "participants", first="FEBio", second=name)
-
+            if (i % 2 == 0):
+                participants = ET.SubElement(coupling_scheme_parallel_explicit, "participants", first=name, second="FEBio")
+            else:
+                participants = ET.SubElement(coupling_scheme_parallel_explicit, "participants", first="FEBio", second=name)
 
             attributes = {
                 "data": write_data,
