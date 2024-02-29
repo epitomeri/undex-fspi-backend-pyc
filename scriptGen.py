@@ -136,7 +136,7 @@ rm *.log
 rm *.xplt
 """
     
-            file.write(solid_script)
+            file.write(clean_script)
             os.chmod(os.path.join(solid_base_path, f'Allclean'), 0o755)
             
 
