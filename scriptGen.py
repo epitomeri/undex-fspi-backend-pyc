@@ -152,7 +152,7 @@ cd Fluid-Inner
             file.write(solid_script)
             os.chmod(os.path.join(project_base_path, f'runFluid-Inner'), 0o755)
             
-        with open(os.path.join(solid_base_path, f'AllClean'), 'w') as file:
+        with open(os.path.join(solid_base_path, f'Allclean'), 'w') as file:
             clean_script = """
 rm *.log
 rm *.xplt
