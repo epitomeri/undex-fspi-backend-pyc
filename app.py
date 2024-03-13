@@ -1,6 +1,7 @@
 from math import log
 from flask import Flask, request, jsonify, make_response, send_from_directory, send_file, Response, stream_with_context
 from flask_cors import CORS
+from flask_mail import Mail, Message
 import os
 import shutil
 from werkzeug.utils import secure_filename
@@ -8,6 +9,9 @@ import zipfile
 import subprocess
 import xml.etree.ElementTree as ET
 import json
+from dotenv import load_dotenv
+
+from auth0_api import auth0_api
 
 from genXML import PreCICEConfigGenerator
 from genBlastFOAM import BlastFoamGenerator
@@ -18,11 +22,22 @@ from utils.formatXML import format_and_overwrite_xml_file
 from utils.fileParse import get_log_enabled, tail_file
 
 app = Flask(__name__)
+app.register_blueprint(auth0_api)
 cors = CORS(app, resource={
     r"/*":{
         "origins":"*"
     }
 })
+
+
+load_dotenv()
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_ADDRESS')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASSWORD')
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
 
 
 @app.before_request
@@ -290,6 +305,28 @@ def handle_test():
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         return "Hello World!"
+
+
+@app.route('/sendemail', methods=['POST'])
+def send_email():
+
+    event = json.loads(request.data)['event']
+    msg = Message('A new user has attempted to sign up through the Simulation webapp app.', sender = 'aiformissiledefense@gmail.com', recipients = ['satish@epitomeri.com'])
+    msg.body = f'New user has signed up\n{event["user"]["email"]}\nhttps://manage.auth0.com/dashboard/us/{os.getenv("AUTH0_NAME")}/users\nPlease send the user verification message: {os.getenv("BACKEND_URL")}/verify?email={event["user"]["email"]}'
+    mail.send(msg)
+    return "Message sent!"
+
+@app.route('/verify', methods=['GET'])
+def verify():
+    verify_email = request.args.get('email')
+
+    msg = Message('Your account has been verified', sender = 'aiformissiledefense@gmail.com', recipients = [verify_email])
+    msg.body = 'You may now access the Simulation webapp.\nhttps://undexfspi.com'
+    mail.send(msg)
+    return "User verification email has been sent!"
+
+
+
 
 def _build_cors_preflight_response():
     response = make_response()
