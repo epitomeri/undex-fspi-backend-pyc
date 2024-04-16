@@ -203,6 +203,45 @@ def handle_febio(projectid):
             return 'File uploaded successfully', 200
     
 
+@app.route("/displacementgraph/<projectid>", methods=['GET', 'OPTIONS']) # type: ignore
+def handle_displacement_graph(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        project_base_path = f'./projects/{projectid}'
+        displacement_graph_path = f'{project_base_path}/validation/blastfoam_displacement.png'
+
+        if not os.path.exists(displacement_graph_path):
+            return 'Graph not found', 404
+        
+        subprocess.run(['python3', project_base_path + "/validation/plot-blastfoam-cell-disp-febio-disp.py"])
+
+        return send_file(displacement_graph_path, as_attachment=True)
+
+
+@app.route('/graphfiles/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getgraphfiles(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        project_base = f'./projects/{projectid}'
+        graph_files = {}
+
+
+        if os.path.exists(project_base):
+            for folder in os.listdir(project_base):
+                folder_path = os.path.join(project_base, folder)
+                if os.path.isdir(folder_path):
+                    for file in os.listdir(folder_path):
+                        if file.endswith('.csv'):
+                            file_path = os.path.join(folder_path, file)
+                            graph_files[file] = file_path
+                
+        
+        
+        return jsonify(graph_files), 200
+
+
 @app.route('/logfiles/<projectid>', methods=['GET']) # type: ignore
 def handle_getlogfiles(projectid):
     if request.method == 'OPTIONS':
