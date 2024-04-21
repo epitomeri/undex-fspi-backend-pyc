@@ -1,0 +1,32 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+echo "Cleaning..."
+
+
+rm -rf precice-run
+
+rm -rf Fluid-Outer-output
+cd Fluid-Outer
+./Allclean
+rm debug.log
+rm precice-Fluid-Outer-events*
+cd ../
+
+rm -rf Fluid-Inner-output
+cd Fluid-Inner
+./Allclean
+rm debug.log
+rm precice-Fluid-Inner-events*
+cd ../
+
+rm -rf Solid-output
+cd Solid
+rm precice-FEBio-events*
+rm debug.log
+rm uniformPressure.log uniformPressure.xplt
+
+./kill_blastfoam.sh
+
+echo "Cleaning complete!"
+#------------------------------------------------------------------------------

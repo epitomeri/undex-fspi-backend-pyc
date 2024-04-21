@@ -1,0 +1,15 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+echo "Cleaning..."
+
+rm *.log
+rm -rf precice-run
+
+( cd Fluid-Water && ./Allclean )
+( cd Fluid-Air && ./Allclean )
+( cd Solid && rm -r *.log *.xplt && rm -rf preCICE-*)
+./kill_blastfoam.sh
+
+echo "Cleaning complete!"
+#------------------------------------------------------------------------------

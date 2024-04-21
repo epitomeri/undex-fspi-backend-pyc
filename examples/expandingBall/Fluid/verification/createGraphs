@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+createPlots()
+{
+
+    gnuplot<<EOF
+    set terminal postscript eps enhanced color font 'Helvetica,40' linewidth 2\
+        dl 8.0
+    set output "volume_area_time.eps"
+    set xlabel "Time [ms]"
+    set ylabel "Average Radius [m]"
+    set y2label "Volume [m^3]"
+    set y2tics
+#     set grid
+    set key center top
+    set size 2,2
+    set autoscale
+    plot    "$1" using (\$1*1000):3 every 100 axes x1y1 title 'Radius'\
+                with points linewidth 8 linecolor rgb 'black',\
+            "$1" using (\$1*1000):2 axes x1y2 title 'Volume'\
+                with lines lt 1 linewidth 2 linecolor rgb 'black'
+EOF
+}
+
+# test if gnuplot exists on the system
+if ! which gnuplot > /dev/null 2>&1
+then
+    echo "gnuplot not found - skipping graph creation" >&2
+    exit 1
+fi
+
+createPlots ../averages
+
+echo Done

@@ -1,0 +1,84 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  9
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      binary;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     blastFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         1e-06;
+
+deltaT          1e-07;
+
+writeControl    timeStep;
+
+writeInterval   1;
+
+cycleWrite      0;
+
+writeFormat     binary;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   12;
+
+runTimeModifiable true;
+
+adjustTimeStep  no;
+adjustTimeStepPrecice no;
+
+maxCo           0.5;
+
+maxDeltaT       1;
+
+libs            ( "libpreciceAdapterFunctionObject.so" );
+
+functions
+{
+    displacementProbes
+    {
+        type            blastPatchProbes;
+        adjustLocations yes;
+        patchName       ball_external;
+        fixLocations    yes;
+        fields
+        (
+            cellDisplacement
+            p
+        );
+        probeLocations
+        (
+            (0 0.1 0)
+            (0 -0.1 0)
+            (0.1 0 0)
+            (-0.1 0 0)
+        );
+    }
+    preCICE_Adapter
+    {
+        type            preciceAdapterFunctionObject;
+    }
+}
+
+
+// ************************************************************************* //

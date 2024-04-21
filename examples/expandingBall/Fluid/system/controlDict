@@ -1,0 +1,76 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  9
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      binary;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     blastFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         0.02;
+
+deltaT          1e-06;
+
+writeControl    adjustableRunTime;
+
+writeInterval   2e-04;
+
+cycleWrite      0;
+
+writeFormat     binary;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   12;
+
+runTimeModifiable true;
+
+adjustTimeStep  yes;
+
+maxCo           0.9;
+
+maxDeltaT       1;
+
+functions
+{
+    averages
+    {
+        type            coded;
+        libs            ( "libutilityFunctionObjects.so" );
+        codeExecute
+        #{
+            const fvPatch& patch = mesh().boundary()[mesh().boundaryMesh().findIndex(word("ball"))];
+            static OFstream os("averages");
+            os  << mesh().time().value() << token::SPACE
+                << gSum(mesh().V()) << token::SPACE
+                << gSum(patch.magSf()*mag(patch.Cf()))/gSum(patch.magSf()) << endl;
+        #};
+    }
+    preCICE_Adapter
+    {
+        type            preciceAdapterFunctionObject;
+        libs            ( "libpreciceAdapterFunctionObject.so" );
+    }
+}
+
+
+// ************************************************************************* //

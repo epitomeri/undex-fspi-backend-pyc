@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<febio_spec version="3.0">
+	<Module type="explicit-solid"/>
+	<Control>
+		<analysis>DYNAMIC</analysis>
+		<time_steps>500</time_steps>
+		<step_size>1e-04</step_size>
+		<plot_stride>1</plot_stride>
+		<solver>
+			<mass_lumping>1</mass_lumping>
+		</solver>
+	</Control>
+	<Material>
+		<material id="1" name="Material1" type="neo-Hookean">
+			<density>1e5</density>
+			<E>1e8</E>
+			<v>0.32</v>
+		</material>
+	</Material>
+	<Mesh>
+		<Nodes name="Object1">
+			<node id="1">-2.67948964e-09,0,-0.1</node>
+			<node id="2">2.67948964e-09,0,0.1</node>
+			<node id="3">2.67948964e-09,1,0.1</node>
+			<node id="4">-2.67948964e-09,1,-0.1</node>
+			<node id="5">2.67948964e-09,0.04,0.1</node>
+			<node id="6">2.67948964e-09,0.08,0.1</node>
+			<node id="7">2.67948964e-09,0.12,0.1</node>
+			<node id="8">2.67948964e-09,0.16,0.1</node>
+			<node id="9">2.67948964e-09,0.2,0.1</node>
+			<node id="10">2.67948964e-09,0.24,0.1</node>
+			<node id="11">2.67948964e-09,0.28,0.1</node>
+			<node id="12">2.67948964e-09,0.32,0.1</node>
+			<node id="13">2.67948964e-09,0.36,0.1</node>
+			<node id="14">2.67948964e-09,0.4,0.1</node>
+			<node id="15">2.67948964e-09,0.44,0.1</node>
+			<node id="16">2.67948964e-09,0.48,0.1</node>
+			<node id="17">2.67948964e-09,0.52,0.1</node>
+			<node id="18">2.67948964e-09,0.56,0.1</node>
+			<node id="19">2.67948964e-09,0.6,0.1</node>
+			<node id="20">2.67948964e-09,0.64,0.1</node>
+			<node id="21">2.67948964e-09,0.68,0.1</node>
+			<node id="22">2.67948964e-09,0.72,0.1</node>
+			<node id="23">2.67948964e-09,0.76,0.1</node>
+			<node id="24">2.67948964e-09,0.8,0.1</node>
+			<node id="25">2.67948964e-09,0.84,0.1</node>
+			<node id="26">2.67948964e-09,0.88,0.1</node>
+			<node id="27">2.67948964e-09,0.92,0.1</node>
+			<node id="28">2.67948964e-09,0.96,0.1</node>
+			<node id="29">-2.67948964e-09,0.96,-0.1</node>
+			<node id="30">-2.67948964e-09,0.92,-0.1</node>
+			<node id="31">-2.67948964e-09,0.88,-0.1</node>
+			<node id="32">-2.67948964e-09,0.84,-0.1</node>
+			<node id="33">-2.67948964e-09,0.8,-0.1</node>
+			<node id="34">-2.67948964e-09,0.76,-0.1</node>
+			<node id="35">-2.67948964e-09,0.72,-0.1</node>
+			<node id="36">-2.67948964e-09,0.68,-0.1</node>
+			<node id="37">-2.67948964e-09,0.64,-0.1</node>
+			<node id="38">-2.67948964e-09,0.6,-0.1</node>
+			<node id="39">-2.67948964e-09,0.56,-0.1</node>
+			<node id="40">-2.67948964e-09,0.52,-0.1</node>
+			<node id="41">-2.67948964e-09,0.48,-0.1</node>
+			<node id="42">-2.67948964e-09,0.44,-0.1</node>
+			<node id="43">-2.67948964e-09,0.4,-0.1</node>
+			<node id="44">-2.67948964e-09,0.36,-0.1</node>
+			<node id="45">-2.67948964e-09,0.32,-0.1</node>
+			<node id="46">-2.67948964e-09,0.28,-0.1</node>
+			<node id="47">-2.67948964e-09,0.24,-0.1</node>
+			<node id="48">-2.67948964e-09,0.2,-0.1</node>
+			<node id="49">-2.67948964e-09,0.16,-0.1</node>
+			<node id="50">-2.67948964e-09,0.12,-0.1</node>
+			<node id="51">-2.67948964e-09,0.08,-0.1</node>
+			<node id="52">-2.67948964e-09,0.04,-0.1</node>
+		</Nodes>
+		<Elements type="quad4" name="Part1">
+			<elem id="1">1,2,5,52</elem>
+			<elem id="2">52,5,6,51</elem>
+			<elem id="3">51,6,7,50</elem>
+			<elem id="4">50,7,8,49</elem>
+			<elem id="5">49,8,9,48</elem>
+			<elem id="6">48,9,10,47</elem>
+			<elem id="7">47,10,11,46</elem>
+			<elem id="8">46,11,12,45</elem>
+			<elem id="9">45,12,13,44</elem>
+			<elem id="10">44,13,14,43</elem>
+			<elem id="11">43,14,15,42</elem>
+			<elem id="12">42,15,16,41</elem>
+			<elem id="13">41,16,17,40</elem>
+			<elem id="14">40,17,18,39</elem>
+			<elem id="15">39,18,19,38</elem>
+			<elem id="16">38,19,20,37</elem>
+			<elem id="17">37,20,21,36</elem>
+			<elem id="18">36,21,22,35</elem>
+			<elem id="19">35,22,23,34</elem>
+			<elem id="20">34,23,24,33</elem>
+			<elem id="21">33,24,25,32</elem>
+			<elem id="22">32,25,26,31</elem>
+			<elem id="23">31,26,27,30</elem>
+			<elem id="24">30,27,28,29</elem>
+			<elem id="25">29,28,3,4</elem>
+		</Elements>
+		<NodeSet name="FixedDisplacement1">
+			<n id="1"/>
+			<n id="2"/>
+			<n id="3"/>
+			<n id="4"/>
+			<n id="5"/>
+			<n id="6"/>
+			<n id="7"/>
+			<n id="8"/>
+			<n id="9"/>
+			<n id="10"/>
+			<n id="11"/>
+			<n id="12"/>
+			<n id="13"/>
+			<n id="14"/>
+			<n id="15"/>
+			<n id="16"/>
+			<n id="17"/>
+			<n id="18"/>
+			<n id="19"/>
+			<n id="20"/>
+			<n id="21"/>
+			<n id="22"/>
+			<n id="23"/>
+			<n id="24"/>
+			<n id="25"/>
+			<n id="26"/>
+			<n id="27"/>
+			<n id="28"/>
+			<n id="29"/>
+			<n id="30"/>
+			<n id="31"/>
+			<n id="32"/>
+			<n id="33"/>
+			<n id="34"/>
+			<n id="35"/>
+			<n id="36"/>
+			<n id="37"/>
+			<n id="38"/>
+			<n id="39"/>
+			<n id="40"/>
+			<n id="41"/>
+			<n id="42"/>
+			<n id="43"/>
+			<n id="44"/>
+			<n id="45"/>
+			<n id="46"/>
+			<n id="47"/>
+			<n id="48"/>
+			<n id="49"/>
+			<n id="50"/>
+			<n id="51"/>
+			<n id="52"/>
+		</NodeSet>
+		<NodeSet name="FixedShellDisplacement1">
+			<n id="1"/>
+			<n id="2"/>
+			<n id="3"/>
+			<n id="4"/>
+			<n id="5"/>
+			<n id="6"/>
+			<n id="7"/>
+			<n id="8"/>
+			<n id="9"/>
+			<n id="10"/>
+			<n id="11"/>
+			<n id="12"/>
+			<n id="13"/>
+			<n id="14"/>
+			<n id="15"/>
+			<n id="16"/>
+			<n id="17"/>
+			<n id="18"/>
+			<n id="19"/>
+			<n id="20"/>
+			<n id="21"/>
+			<n id="22"/>
+			<n id="23"/>
+			<n id="24"/>
+			<n id="25"/>
+			<n id="26"/>
+			<n id="27"/>
+			<n id="28"/>
+			<n id="29"/>
+			<n id="30"/>
+			<n id="31"/>
+			<n id="32"/>
+			<n id="33"/>
+			<n id="34"/>
+			<n id="35"/>
+			<n id="36"/>
+			<n id="37"/>
+			<n id="38"/>
+			<n id="39"/>
+			<n id="40"/>
+			<n id="41"/>
+			<n id="42"/>
+			<n id="43"/>
+			<n id="44"/>
+			<n id="45"/>
+			<n id="46"/>
+			<n id="47"/>
+			<n id="48"/>
+			<n id="49"/>
+			<n id="50"/>
+			<n id="51"/>
+			<n id="52"/>
+		</NodeSet>
+		<NodeSet name="FixedDisplacement2">
+			<n id="1"/>
+			<n id="2"/>
+			<n id="3"/>
+			<n id="4"/>
+		</NodeSet>
+		<Surface name="Solid-Nodes">
+			<quad4 id="1">1,2,5,52</quad4>
+			<quad4 id="2">52,5,6,51</quad4>
+			<quad4 id="3">51,6,7,50</quad4>
+			<quad4 id="4">50,7,8,49</quad4>
+			<quad4 id="5">49,8,9,48</quad4>
+			<quad4 id="6">48,9,10,47</quad4>
+			<quad4 id="7">47,10,11,46</quad4>
+			<quad4 id="8">46,11,12,45</quad4>
+			<quad4 id="9">45,12,13,44</quad4>
+			<quad4 id="10">44,13,14,43</quad4>
+			<quad4 id="11">43,14,15,42</quad4>
+			<quad4 id="12">42,15,16,41</quad4>
+			<quad4 id="13">41,16,17,40</quad4>
+			<quad4 id="14">40,17,18,39</quad4>
+			<quad4 id="15">39,18,19,38</quad4>
+			<quad4 id="16">38,19,20,37</quad4>
+			<quad4 id="17">37,20,21,36</quad4>
+			<quad4 id="18">36,21,22,35</quad4>
+			<quad4 id="19">35,22,23,34</quad4>
+			<quad4 id="20">34,23,24,33</quad4>
+			<quad4 id="21">33,24,25,32</quad4>
+			<quad4 id="22">32,25,26,31</quad4>
+			<quad4 id="23">31,26,27,30</quad4>
+			<quad4 id="24">30,27,28,29</quad4>
+			<quad4 id="25">29,28,3,4</quad4>
+		</Surface>
+	</Mesh>
+	<MeshDomains>
+		<ShellDomain name="Part1" mat="Material1">
+			<shell_normal_nodal>1</shell_normal_nodal>
+		</ShellDomain>
+	</MeshDomains>
+	<MeshData>
+		<ElementData var="shell thickness" elem_set="Part1">
+			<e lid="1">0.001,0.001,0.001,0.001</e>
+			<e lid="2">0.001,0.001,0.001,0.001</e>
+			<e lid="3">0.001,0.001,0.001,0.001</e>
+			<e lid="4">0.001,0.001,0.001,0.001</e>
+			<e lid="5">0.001,0.001,0.001,0.001</e>
+			<e lid="6">0.001,0.001,0.001,0.001</e>
+			<e lid="7">0.001,0.001,0.001,0.001</e>
+			<e lid="8">0.001,0.001,0.001,0.001</e>
+			<e lid="9">0.001,0.001,0.001,0.001</e>
+			<e lid="10">0.001,0.001,0.001,0.001</e>
+			<e lid="11">0.001,0.001,0.001,0.001</e>
+			<e lid="12">0.001,0.001,0.001,0.001</e>
+			<e lid="13">0.001,0.001,0.001,0.001</e>
+			<e lid="14">0.001,0.001,0.001,0.001</e>
+			<e lid="15">0.001,0.001,0.001,0.001</e>
+			<e lid="16">0.001,0.001,0.001,0.001</e>
+			<e lid="17">0.001,0.001,0.001,0.001</e>
+			<e lid="18">0.001,0.001,0.001,0.001</e>
+			<e lid="19">0.001,0.001,0.001,0.001</e>
+			<e lid="20">0.001,0.001,0.001,0.001</e>
+			<e lid="21">0.001,0.001,0.001,0.001</e>
+			<e lid="22">0.001,0.001,0.001,0.001</e>
+			<e lid="23">0.001,0.001,0.001,0.001</e>
+			<e lid="24">0.001,0.001,0.001,0.001</e>
+			<e lid="25">0.001,0.001,0.001,0.001</e>
+		</ElementData>
+		<SurfaceData name="Stress" generator="const" datatype="vec3" surface="Solid-Nodes">
+			<value>0.0, 0.0, 0.0</value>
+		</SurfaceData>
+	</MeshData>
+	<Boundary>
+		<bc name="FixedDisplacement1" type="fix" node_set="FixedDisplacement1">
+			<dofs>z</dofs>
+		</bc>
+		<bc name="FixedShellDisplacement1" type="fix" node_set="FixedShellDisplacement1">
+			<dofs>sz</dofs>
+		</bc>
+		<bc name="FixedDisplacement2" type="fix" node_set="FixedDisplacement2">
+			<dofs>x,y</dofs>
+		</bc>
+	</Boundary>
+	<Loads>
+		<surface_load name="TractionLoad1" type="traction" surface="Solid-Nodes">
+			<scale>1</scale>
+			<traction type="map">Stress</traction>
+			<shell_bottom>0</shell_bottom>
+		</surface_load>
+	</Loads>
+	<Output>
+		<plotfile type="febio">
+			<var type="displacement"/>
+			<var type="stress"/>
+			<var type="shell thickness"/>
+		</plotfile>
+	</Output>
+</febio_spec>

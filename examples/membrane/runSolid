@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Solid participant
+
+echo "Preparing and running the Solid participant..."
+
+# Run
+cd Solid
+febio-precice membrane.feb ../precice-config.xml -force-offset -participant Solid
+
+

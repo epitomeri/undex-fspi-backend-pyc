@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+
+<precice-configuration>
+
+<log enabled="true">
+    <sink type="stream" output="stdout" format="Hello %Message%"
+          filter="%Severity% > trace"  enabled="true" />
+    <sink type="file" output="debug.log" filter="%Severity% > debug" enabled="true" />
+  </log>
+
+    <solver-interface dimensions="3">
+
+    <data:vector name="Stress"/>
+    <data:vector name="Displacements0"/>
+
+    <mesh name="Fluid-Faces">
+        <use-data name="Stress"/>
+    </mesh>
+
+    <mesh name="Fluid-Nodes">
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <mesh name="Solid">
+        <use-data name="Stress"/>
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <participant name="Fluid">
+        <use-mesh name="Fluid-Faces" provide="yes"/>
+        <use-mesh name="Fluid-Nodes" provide="yes"/>
+        <use-mesh name="Solid" from="FEBio"/>
+        <write-data name="Stress" mesh="Fluid-Faces"/>
+        <read-data name="Displacements0" mesh="Fluid-Nodes"/>
+
+        <mapping:nearest-projection direction="read" from="Solid" to="Fluid-Nodes" constraint="consistent"/>
+        <!-- <export:vtk directory="preCICE-Fluid-output" /> -->
+    </participant>
+
+    <participant name="FEBio">
+        <use-mesh name="Solid" provide="yes"/>
+        <use-mesh name="Fluid-Faces" from="Fluid"/>
+
+        <read-data name="Stress" mesh="Solid"/>
+        <write-data name="Displacements0" mesh="Solid"/>
+
+        <mapping:nearest-projection direction="read" from="Fluid-Faces" to="Solid" constraint="consistent" />
+    </participant>
+
+    <m2n:sockets from="Fluid" to="FEBio" exchange-directory=".."/>
+
+    <coupling-scheme:parallel-explicit>
+        <time-window-size value="2e-6" method="fixed"/>
+        <max-time value="1e-2"/>
+        <participants first="Fluid" second="FEBio"/>
+        <exchange data="Stress" mesh="Fluid-Faces" from="Fluid" to="FEBio"/>
+        <exchange data="Displacements0" mesh="Solid" from="FEBio" to="Fluid"/>
+    </coupling-scheme:parallel-explicit>
+
+    </solver-interface>
+
+</precice-configuration>

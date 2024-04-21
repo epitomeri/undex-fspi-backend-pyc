@@ -1,0 +1,19 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+# -- Create paraview file
+paraFoam -builtin -touch
+
+# -- create the mesh for the fluid
+runApplication surfaceFeatures
+runApplication blockMesh
+runApplication decomposePar -copyZero
+runParallel snappyHexMesh -overwrite
+
+# -- Run the calc
+runParallel -o $(getApplication)
+
+# ----------------------------------------------------------------- end-of-file

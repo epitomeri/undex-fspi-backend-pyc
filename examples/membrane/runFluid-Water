@@ -1,0 +1,8 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # run from this directory
+
+echo "Preparing and running the Fluid-Water participant..."
+
+( cd Fluid-Water && ./Allrun )
+
+# ----------------------------------------------------------------- end-of-file

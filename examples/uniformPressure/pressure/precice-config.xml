@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+
+<precice-configuration>
+
+    <log enabled="true">
+    <sink type="stream" output="stdout" format="Hello %Message%"
+          filter="%Severity% > trace"  enabled="true" />
+    <sink type="file" output="debug.log" filter="%Severity% > debug" enabled="true" />
+  </log>
+
+    <solver-interface dimensions="3">
+
+    <data:scalar name="Pressure"/>
+    <data:scalar name="negPressure-Inner"/>
+    <data:scalar name="Pressure-Outer"/>
+    <data:vector name="Displacements0"/>
+
+    <mesh name="Fluid-Outer-Nodes">
+        <use-data name="Pressure-Outer"/>
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <mesh name="Fluid-Inner-Nodes">
+        <use-data name="negPressure-Inner"/>
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <mesh name="Solid">
+        <use-data name="Pressure"/>
+        <use-data name="negPressure-Inner"/>
+        <use-data name="Pressure-Outer"/>
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <participant name="Fluid-Inner">
+        <use-mesh name="Fluid-Inner-Nodes" provide="yes"/>
+        <use-mesh name="Solid" from="FEBio"/>
+        <write-data name="negPressure-Inner" mesh="Fluid-Inner-Nodes"/>
+        <read-data name="Displacements0" mesh="Fluid-Inner-Nodes"/>
+
+        <mapping:nearest-projection direction="read" from="Solid" to="Fluid-Inner-Nodes" constraint="consistent"/>
+        <export:vtk directory="../Fluid-Inner-output" />
+    </participant>
+
+    <participant name="Fluid-Outer">
+        <use-mesh name="Fluid-Outer-Nodes" provide="yes"/>
+        <use-mesh name="Solid" from="FEBio"/>
+        <write-data name="Pressure-Outer" mesh="Fluid-Outer-Nodes"/>
+        <read-data name="Displacements0" mesh="Fluid-Outer-Nodes"/>
+
+        <mapping:nearest-projection direction="read" from="Solid" to="Fluid-Outer-Nodes" constraint="consistent"/>
+
+        <export:vtk directory="../Fluid-Outer-output" />
+    </participant>
+
+    <participant name="FEBio">
+        <use-mesh name="Solid" provide="yes"/>
+        <use-mesh name="Fluid-Inner-Nodes" from="Fluid-Inner"/>
+        <use-mesh name="Fluid-Outer-Nodes" from="Fluid-Outer"/>
+
+        <read-data name="negPressure-Inner" mesh="Solid"/>
+        <read-data name="Pressure-Outer" mesh="Solid"/>
+        <write-data name="Displacements0" mesh="Solid"/>
+
+        <action:summation timing="read-mapping-post" mesh="Solid">
+            <source-data name="negPressure-Inner" />
+            <source-data name="Pressure-Outer" />
+            <target-data name="Pressure" />
+        </action:summation>
+        <read-data name="Pressure" mesh="Solid"/>
+
+        <mapping:nearest-projection direction="read" from="Fluid-Inner-Nodes" to="Solid" constraint="consistent" />
+        <mapping:nearest-projection direction="read" from="Fluid-Outer-Nodes" to="Solid" constraint="consistent" />
+        <export:vtk directory="../Solid-output" />
+    </participant>
+
+    <m2n:sockets from="Fluid-Outer" to="FEBio" exchange-directory="../"/>
+    <m2n:sockets from="Fluid-Inner" to="FEBio" exchange-directory="../"/>
+
+    <coupling-scheme:serial-explicit>
+        <time-window-size value="-1" method="first-participant"/>
+        <max-time value="1e-6"/>
+        <participants first="Fluid-Outer" second="FEBio"/>
+        <exchange data="Pressure-Outer" mesh="Fluid-Outer-Nodes" from="Fluid-Outer" to="FEBio"/>
+        <exchange data="Displacements0" mesh="Solid" from="FEBio" to="Fluid-Outer"/>
+    </coupling-scheme:serial-explicit>
+
+    <coupling-scheme:serial-explicit>
+        <time-window-size value="-1" method="first-participant"/>
+        <max-time value="1e-6"/>
+        <participants first="Fluid-Inner" second="FEBio"/>
+        <exchange data="negPressure-Inner" mesh="Fluid-Inner-Nodes" from="Fluid-Inner" to="FEBio"/>
+        <exchange data="Displacements0" mesh="Solid" from="FEBio" to="Fluid-Inner" />
+    </coupling-scheme:serial-explicit>
+    </solver-interface>
+
+</precice-configuration>

@@ -1,0 +1,2 @@
+./runFluid &
+./runSolid &

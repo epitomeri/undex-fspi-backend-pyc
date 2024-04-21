@@ -1,0 +1,56 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.0                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      phaseProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+mixture
+{
+    type basic;
+    calculateDensity yes;
+    thermoType
+    {
+        transport   const;
+        thermo      eConst;
+        equationOfState linearTillotson;
+    }
+    equationOfState
+    {
+        p0      1e5;
+        rho0    1000.0;
+        e0      3.542e5;
+        omega   0.28;
+        A       2.2e9;
+        B       9.94e9;
+        C       14.57e9;
+        pCav    5000;
+    }
+    specie
+    {
+        molWeight       18;
+    }
+    transport
+    {
+        mu              0;
+        Pr              1;
+    }
+    thermodynamics
+    {
+        type        eConst;
+        Cv          2400; // Give correct reference temperature
+        Hf          0;
+    }
+}
+
+// ************************************************************************* //

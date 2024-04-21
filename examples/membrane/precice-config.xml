@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+
+<precice-configuration>
+
+<log enabled="true">
+    <sink type="stream" output="stdout" format="Hello %Message%"
+          filter="%Severity% > trace"  enabled="true" />
+    <sink type="file" output="debug.log" filter="%Severity% > debug" enabled="true" />
+  </log>
+
+    <solver-interface dimensions="3">
+
+    <data:vector name="Stress"/>
+    <data:vector name="Stress-Air"/>
+    <data:vector name="Stress-Water"/>
+    <data:vector name="Displacements0"/>
+
+    <mesh name="Fluid-Water-Faces">
+        <use-data name="Stress-Water"/>
+    </mesh>
+
+    <mesh name="Fluid-Water-Nodes">
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <mesh name="Fluid-Air-Faces">
+        <use-data name="Stress-Air"/>
+    </mesh>
+
+    <mesh name="Fluid-Air-Nodes">
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <mesh name="Solid-Nodes">
+        <use-data name="Stress"/>
+        <use-data name="Stress-Air"/>
+        <use-data name="Stress-Water"/>
+        <use-data name="Displacements0"/>
+    </mesh>
+
+    <participant name="Fluid-Air">
+        <use-mesh name="Fluid-Air-Faces" provide="yes"/>
+        <use-mesh name="Fluid-Air-Nodes" provide="yes"/>
+        <use-mesh name="Solid-Nodes" from="Solid"/>
+        <write-data name="Stress-Air" mesh="Fluid-Air-Faces"/>
+        <read-data name="Displacements0" mesh="Fluid-Air-Nodes"/>
+
+        <mapping:nearest-projection direction="read" from="Solid-Nodes" to="Fluid-Air-Nodes" constraint="consistent"/>
+	<export:vtk directory="preCICE-Air-output" />
+    </participant>
+
+    <participant name="Fluid-Water">
+        <use-mesh name="Fluid-Water-Faces" provide="yes"/>
+        <use-mesh name="Fluid-Water-Nodes" provide="yes"/>
+        <use-mesh name="Solid-Nodes" from="Solid"/>
+        <write-data name="Stress-Water" mesh="Fluid-Water-Faces"/>
+        <read-data name="Displacements0" mesh="Fluid-Water-Nodes"/>
+
+        <mapping:nearest-projection direction="read" from="Solid-Nodes" to="Fluid-Water-Nodes" constraint="consistent"/>
+	<export:vtk directory="preCICE-Fluid-Water-output" />
+    </participant>
+
+    <participant name="Solid">
+        <use-mesh name="Solid-Nodes" provide="yes"/>
+        <use-mesh name="Fluid-Air-Faces" from="Fluid-Air"/>
+        <use-mesh name="Fluid-Water-Faces" from="Fluid-Water"/>
+
+        <read-data name="Stress-Air" mesh="Solid-Nodes"/>
+        <read-data name="Stress-Water" mesh="Solid-Nodes"/>
+        <read-data name="Stress" mesh="Solid-Nodes"/>
+        <write-data name="Displacements0" mesh="Solid-Nodes"/>
+
+        <action:summation timing="read-mapping-post" mesh="Solid-Nodes">
+            <source-data name="Stress-Air" />
+            <source-data name="Stress-Water" />
+            <target-data name="Stress" />
+        </action:summation>
+
+
+
+        <mapping:nearest-projection direction="read" from="Fluid-Air-Faces" to="Solid-Nodes" constraint="consistent" />
+        <mapping:nearest-projection direction="read" from="Fluid-Water-Faces" to="Solid-Nodes" constraint="consistent" />
+        <export:vtk directory="preCICE-Solid-output" />
+    </participant>
+
+    <m2n:sockets from="Fluid-Water" to="Solid" exchange-directory=".." />
+    <m2n:sockets from="Fluid-Air" to="Solid" exchange-directory=".."/>
+
+    <coupling-scheme:parallel-explicit>
+        <time-window-size value="1e-5" method="fixed"/>
+        <max-time value="5e-2"/>
+        <participants first="Fluid-Air" second="Solid"/>
+        <exchange data="Stress-Air" mesh="Fluid-Air-Faces" from="Fluid-Air" to="Solid"/>
+        <exchange data="Displacements0" mesh="Solid-Nodes" from="Solid" to="Fluid-Air"/>
+    </coupling-scheme:parallel-explicit>
+
+    <coupling-scheme:parallel-explicit>
+        <time-window-size value="1e-5" method="fixed"/>
+        <max-time value="5e-2"/>
+        <participants first="Fluid-Water" second="Solid"/>
+        <exchange data="Stress-Water" mesh="Fluid-Water-Faces" from="Fluid-Water" to="Solid"/>
+        <exchange data="Displacements0" mesh="Solid-Nodes" from="Solid" to="Fluid-Water"/>
+    </coupling-scheme:parallel-explicit>
+
+    </solver-interface>
+
+</precice-configuration>
