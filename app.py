@@ -10,6 +10,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 import json
 from dotenv import load_dotenv
+import csv
 
 from auth0_api import auth0_api
 
@@ -209,6 +210,12 @@ def handle_displacement_graph(projectid):
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         project_base_path = f'./projects/{projectid}'
+        validation_path = f'{project_base_path}/validation'
+
+        if not os.path.exists(validation_path):
+            os.makedirs(validation_path)
+            return 'Validation folder not found', 404
+
         displacement_graph_path = f'{project_base_path}/validation/blastfoam_displacement.png'
 
         if not os.path.exists(displacement_graph_path):
@@ -219,7 +226,8 @@ def handle_displacement_graph(projectid):
         return send_file(displacement_graph_path, as_attachment=True)
 
 
-@app.route('/graphfiles/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
+
+@app.route('/graphfiles/<projectid>', methods=['GET', 'OPTIONS'])
 def handle_getgraphfiles(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -227,19 +235,55 @@ def handle_getgraphfiles(projectid):
         project_base = f'./projects/{projectid}'
         graph_files = {}
 
+    if os.path.exists(project_base):
+        for folder in os.listdir(project_base):
+            folder_path = os.path.join(project_base, folder)
+            if os.path.isdir(folder_path):
+                for file in os.listdir(folder_path):
+                    if file.endswith('.csv'):
+                        file_path = os.path.join(folder_path, file)
+                        # Getting the path relative to project_base
+                        relative_path = os.path.relpath(file_path, project_base)
+                        graph_files[relative_path] = relative_path
+    
+    return jsonify(graph_files), 200
 
-        if os.path.exists(project_base):
-            for folder in os.listdir(project_base):
-                folder_path = os.path.join(project_base, folder)
-                if os.path.isdir(folder_path):
-                    for file in os.listdir(folder_path):
-                        if file.endswith('.csv'):
-                            file_path = os.path.join(folder_path, file)
-                            graph_files[file] = file_path
+
+@app.route('/graphfile/<projectid>/', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getgraphfile(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        graphfilename = request.args.get('name') 
+        if (".csv" not in graphfilename): # type: ignore
+            return "Invalid file type", 400
+        file_path = f'./projects/{projectid}/{graphfilename}'
+        try:
+            with open(file_path, mode='r', newline='') as file:
+                reader = csv.reader(file)
+                title = next(reader)
+                headers = next(reader)  
+                xvals, yvals = [], []
+                for row in reader:
+                    if len(row) >= 2:  
+                        xvals.append(row[0])
+                        yvals.append(row[1])
                 
-        
-        
-        return jsonify(graph_files), 200
+                result = {
+                    "title": title[0] if len(title) > 0 else "Graph",
+                    "xgraph": headers[0] if len(headers) > 0 else "X",
+                    "ygraph": headers[1] if len(headers) > 1 else "Y",
+                    "xvals": xvals,
+                    "yvals": yvals
+                }
+                return result
+            
+
+        except FileNotFoundError:
+            return "File not found", 404
+        except Exception as e:
+            return f"An error occurred: {str(e)}", 500
+
 
 
 @app.route('/logfiles/<projectid>', methods=['GET']) # type: ignore
@@ -259,32 +303,35 @@ def handle_getlogfiles(projectid):
         xml_config_path = f'{project_base}/precice-config.xml'
         log_file_name = ""
 
+        enabled = False
+        lfm = None
+
         if os.path.exists(xml_config_path):
             
             enabled, lfm = get_log_enabled(xml_config_path)
             log_file_name = lfm if lfm is not None else log_file_name
 
-            for raw_case in os.listdir(project_base):
-                if raw_case != "precice-run":
-                    case_path = os.path.join(project_base, raw_case)
-                    if(os.path.isdir(case_path)) and raw_case != 'validation':
-                        
-                        if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
-                            log_files[raw_case] = []
-                            log_files[raw_case].append('log.blockMesh')
-                            log_files[raw_case].append('log.snappyHexMesh')
-                            log_files[raw_case].append('log.decomposePar')
-                            log_files[raw_case].append('log.surfaceFeatures')
-                            log_files[raw_case].append('log.rotateConservativeFields')
-                            log_files[raw_case].append('log.blastFoam')
-
-                        
-                        if raw_case == "Solid":
-                            log_files[raw_case] = []
-                            log_files[raw_case].append('febio-precice.log')
+        for raw_case in os.listdir(project_base):
+            if raw_case != "precice-run":
+                case_path = os.path.join(project_base, raw_case)
+                if(os.path.isdir(case_path)) and raw_case != 'validation':
                     
-                        if enabled == 'True': # type: ignore
-                            log_files[raw_case].append(log_file_name)
+                    if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
+                        log_files[raw_case] = []
+                        log_files[raw_case].append('log.blockMesh')
+                        log_files[raw_case].append('log.snappyHexMesh')
+                        log_files[raw_case].append('log.decomposePar')
+                        log_files[raw_case].append('log.surfaceFeatures')
+                        log_files[raw_case].append('log.rotateConservativeFields')
+                        log_files[raw_case].append('log.blastFoam')
+
+                    
+                    if raw_case == "Solid":
+                        log_files[raw_case] = []
+                        log_files[raw_case].append('febio-precice.log')
+                
+                    if enabled == 'True': # type: ignore
+                        log_files[raw_case].append(log_file_name)
             
         return jsonify(log_files), 200
 
