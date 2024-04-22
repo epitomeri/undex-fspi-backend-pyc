@@ -1,2 +1,3 @@
+./Allclean &
 ./runFluid &
 ./runSolid &
