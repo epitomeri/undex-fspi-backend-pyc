@@ -17,6 +17,7 @@ from auth0_api import auth0_api
 from genXML import PreCICEConfigGenerator
 from genBlastFOAM import BlastFoamGenerator
 from genFebio import FebioConfigGenerator
+from genPulse import PulseConfigGenerator
 from scriptGen import ScriptGen
 
 from utils.formatXML import format_and_overwrite_xml_file
@@ -141,6 +142,30 @@ def handle_febiogen(projectid):
         ScriptGen.gen_clean_script(projectid)
         ScriptGen.gen_solid_script(projectid)
         return send_from_directory(directory, filename, as_attachment=True) 
+
+@app.route('/pulsegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_pulsegen(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'POST':
+        directory_path = f'./projects/{projectid}/Physiology'
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
+        if not os.path.exists(f'./tmp/{projectid}/Physiology/'):
+            os.makedirs(f'./tmp/{projectid}/Physiology/')
+
+        solver_case_json = request.form.get('solverCase')
+        data = json.loads(solver_case_json) # type: ignore
+
+        generator = PulseConfigGenerator()
+
+        output_file_path = generator.generate_py_script(data, projectid)
+
+        directory = os.path.dirname(output_file_path)
+        filename = os.path.basename(output_file_path)
+
+        return send_from_directory(directory, filename, as_attachment=True)
 
 @app.route('/precicegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_precice(projectid):
