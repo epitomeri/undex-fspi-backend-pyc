@@ -259,8 +259,16 @@ def handle_getgraphfiles(projectid):
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         project_base = f'./projects/{projectid}'
-        graph_files = {}
+        displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
 
+
+        graph_files = {
+            "Displacement Response": "",
+        }
+
+        if not os.path.exists(displacement_graph_path):
+            graph_files = {}
+        
     if os.path.exists(project_base):
         for folder in os.listdir(project_base):
             folder_path = os.path.join(project_base, folder)
