@@ -326,6 +326,9 @@ def handle_getlogfiles(projectid):
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         project_base = f'./projects/{projectid}'
+
+        if not os.path.exists(project_base):
+            os.makedirs(project_base)
     
 
         log_files = {
