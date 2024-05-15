@@ -363,10 +363,17 @@ def handle_getlogfiles(projectid):
                     if raw_case == "Solid":
                         log_files[raw_case] = []
                         log_files[raw_case].append('febio-precice.log')
+
+                    if raw_case not in log_files.keys():
+                        log_files[raw_case] = []
+                        log_files[raw_case] = [f for f in os.listdir(case_path) if f.endswith('.log')]
+
                 
                     if enabled == 'True': # type: ignore
                         log_files[raw_case].append(log_file_name)
-            
+
+
+
         return jsonify(log_files), 200
 
 
