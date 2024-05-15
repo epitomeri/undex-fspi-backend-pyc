@@ -26,8 +26,12 @@ def HowTo_ExpandedRespiratory():
     cfg.set_expanded_respiratory(eSwitch.On)
     pulse.set_configuration_override(cfg)
     data_requests = [
-        {% for request in data_requests %}
-        SEDataRequest.create_physiology_request("{{ request.name }}", unit={{ request.unit }}),
+        {% for request, include in data_requests.items() if request != 'allSelected' and include %}
+        {% if request_units[request] %}
+        SEDataRequest.create_physiology_request("{{ request }}", unit={{ request_units[request] }}),
+        {% else %}
+        SEDataRequest.create_physiology_request("{{ request }}"),
+        {% endif %}
         {% endfor %}
     ]
     data_req_mgr = SEDataRequestManager(data_requests)
@@ -55,8 +59,8 @@ def HowTo_ExpandedRespiratory():
     pulse.print_results()
 
     pbli = SEPrimaryBlastLungInjury()
-    {% for severity in compartment_severities %}
-    pbli.get_severity(eLungCompartment.{{ severity.compartment }}).set_value({{ severity.value }})
+    {% for key, value in damages.items() %}
+    pbli.get_severity(eLungCompartment.{{ key }}).set_value({{ value }})
     {% endfor %}
     pulse.process_action(pbli)
 
@@ -67,16 +71,34 @@ HowTo_ExpandedRespiratory()
 """
 
     def generate_py_script(self, data, projectid):
+        # Define unit mappings for each request type
+        request_units = {
+            'HeartRate': 'FrequencyUnit.Per_min',
+            'ArterialPressure': 'PressureUnit.mmHg',
+            'MeanArterialPressure': 'PressureUnit.mmHg',
+            'SystolicArterialPressure': 'PressureUnit.mmHg',
+            'DiastolicArterialPressure': 'PressureUnit.mmHg',
+            'EndTidalCarbonDioxidePressure': 'PressureUnit.mmHg',
+            'HorowitzIndex': 'PressureUnit.mmHg',
+            'OxygenSaturation': None,  # No unit for OxygenSaturation
+            'RespirationRate': 'FrequencyUnit.Per_min',
+            'TidalVolume': 'VolumeUnit.mL',
+            'TotalLungVolume': 'VolumeUnit.mL'
+        }
+
         # Create a Jinja2 environment and load the template
         template = jinja2.Template(self.template)
-        rendered_script = template.render(data)
+        rendered_script = template.render(data_requests=data['results'],
+                                          request_units=request_units,
+                                          damages=data['cardioModel']['damages'],
+                                          max_time_of_sim=data['simSettings']['maxSimTime'])
 
         # Ensure the directory exists
         directory_path = os.path.join(f'./projects/{projectid}/Physiology')
         os.makedirs(directory_path, exist_ok=True)
 
         # Write the script to a file
-        script_path = os.path.join(directory_path, 'pulse_script.py')
+        script_path = os.path.join(directory_path, 'generated_script.py')
         with open(script_path, 'w') as file:
             file.write(rendered_script)
 
