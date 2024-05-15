@@ -19,7 +19,7 @@ from pulse.engine.PulseConfiguration import PulseConfiguration
 
 def HowTo_ExpandedRespiratory():
     pulse = PulseEngine()
-    pulse.set_log_filename("./HowTo_ExpandedRespiratory.py.log")
+    pulse.set_log_filename("./pulse.log")
     pulse.log_to_console(True)
 
     cfg = PulseConfiguration()

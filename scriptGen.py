@@ -183,6 +183,8 @@ chmod 755 ./validation/createGraphs
 ./runFluid-Outer > runFluid-Outer.out &
 ./runFluid-Inner > runFluid-Inner.out &
 ./runSolid > runSolid.out &
+cd Physiology
+python3 *.py &
 """
         
             file.write(run_script)

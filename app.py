@@ -415,19 +415,25 @@ def handle_getlogfile(projectid, casename, logfilename):
             return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream') """
         
 
-
-@app.route('/run/<projectid>', methods=['GET']) # type: ignore
+@app.route('/run/<projectid>', methods=['GET'])  # type: ignore
 def handle_run(projectid):
     if request.method == 'GET':
         print("running" + projectid)
         project_base_path = f'./projects/{projectid}'
         ScriptGen.gen_run_script(projectid)
 
-        ScriptGen.gen_solid_script(projectid)
-        ScriptGen.gen_fluid_script(projectid)
+        # Check for the existence of a directory starting with 'Solid'
+        solid_dir = next((d for d in os.listdir(project_base_path) if os.path.isdir(os.path.join(project_base_path, d)) and d.startswith('Solid')), None)
+        if solid_dir:
+            ScriptGen.gen_solid_script(projectid)
 
-        subprocess.run(['bash', f'{project_base_path}/Allclean'])
-        subprocess.run(['bash', f'{project_base_path}/run.sh'])
+        # Check for the existence of a directory starting with 'Fluid'
+        fluid_dir = next((d for d in os.listdir(project_base_path) if os.path.isdir(os.path.join(project_base_path, d)) and d.startswith('Fluid')), None)
+        if fluid_dir:
+            ScriptGen.gen_fluid_script(projectid)
+            subprocess.run(['bash', os.path.join(project_base_path, 'Allclean')])
+
+        subprocess.run(['bash', os.path.join(project_base_path, 'run.sh')])
 
         return 'Simulation started', 200
 
