@@ -371,6 +371,8 @@ def handle_getlogfiles(projectid):
                         log_files[raw_case] = []
                         log_files[raw_case] = [f for f in os.listdir(case_path) if f.endswith('.log')]
 
+                    if len(log_files[raw_case]) == 0:
+                        log_files.pop(raw_case)
                 
                     if enabled == 'True': # type: ignore
                         log_files[raw_case].append(log_file_name)
