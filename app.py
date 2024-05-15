@@ -148,6 +148,8 @@ def handle_pulsegen(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
+        data = request.get_json()
+
         directory_path = f'./projects/{projectid}/Physiology'
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
@@ -155,8 +157,7 @@ def handle_pulsegen(projectid):
         if not os.path.exists(f'./tmp/{projectid}/Physiology/'):
             os.makedirs(f'./tmp/{projectid}/Physiology/')
 
-        solver_case_json = request.form.get('solverCase')
-        data = json.loads(solver_case_json) # type: ignore
+        print('data is ', data)
 
         generator = PulseConfigGenerator()
 
