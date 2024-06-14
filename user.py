@@ -14,6 +14,8 @@ user_routes = Blueprint('user', __name__)
 
 uri = os.getenv('DB_URI')
 
+
+
 @user_routes.route('/checkstatus', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_checkstatus():
     if request.method == 'OPTIONS':
@@ -29,9 +31,13 @@ def handle_checkstatus():
         user = users.find_one({'email': email})
 
         client.close()
-        
+
         if user:
-            return jsonify({'status': user['status'], 'privileges': user['privileges']}), 200
+            return jsonify({
+                'status': user['status'], 
+                'privileges': user['privileges'],
+                'verified': user['verified']
+            }), 200
         else:
             return jsonify({'status': 'invalid'}), 404
         
@@ -102,14 +108,15 @@ def handle_createproject():
         params = request.json
 
         solvers = params['solvers']
+        print(solvers)
         status = {}
         if ("undex" in solvers):
             solvers.remove("undex")
             status = {
-                "hydrodynamics": True,
-                "biomechanics": True,
-                "physiology": True,
-                "coupling": True
+                "Hydrodynamics": True,
+                "Biomechanics": True,
+                "Physiology": True,
+                "Coupling": True
             }
         else:
             status = {key: True for key in solvers}
@@ -186,6 +193,138 @@ def handle_updateproject():
             client.close()
             return jsonify({'status': 'invalid'}), 404
 
+
+@user_routes.route('/allusers', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_allusers():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['Data']
+        users = db['Users']
+
+        params = request.args
+        email = params.get('email')
+
+        admin_user = users.find_one({'email': email})
+        if not admin_user or admin_user['status'] != 'admin':
+            client.close()
+            return jsonify({'status': 'invalid'}), 404
+
+        user_list = []
+        for user in users.find({'status': {'$ne': 'admin'}}):
+            del user['_id']
+            user_list.append(user)
+
+        client.close()
+
+        return jsonify(user_list), 200
+
+
+@user_routes.route('/updateusers', methods=['PUT', 'OPTIONS']) # type: ignore
+def handle_updateusers():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'PUT':
+    
+    
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['Data']
+        users = db['Users']
+
+        if (request.json == None):
+            return jsonify({'status': 'invalid'}), 404
+
+        params = request.json
+        print(params['users'])
+        for user in params['users']:
+            privileges = user['privileges']
+            requests = user['requests']
+            verified = bool(user['verified'])
+
+            for solver in privileges:
+                if solver in requests:
+                    requests.remove(solver)
+
+
+            if user['status'] != 'admin':
+                users.update_one({'email': user['email']}, 
+                                 {'$set': {'privileges': privileges, 'verified': verified, 'requests': requests}})
+                
+        client.close()
+        
+
+
+        return jsonify({'status': 'success'}), 200
+
+
+@user_routes.route('/solverRequest', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_solverRequest():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'POST':
+
+        if (request.json == None):
+            return jsonify({'status': 'invalid'}), 404
+        
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['Data']
+        users = db['Users']
+
+        params = request.json
+        email = params['email']
+        requests = params['requests']
+
+        user = users.find_one({'email': email})
+
+        if user:
+            if (requests not in user['requests']):
+                user['requests'] = [requests] + user['requests']
+            users.update_one({'email': email}, {'$set': user})
+            client.close()
+            return jsonify({'status': 'success'}), 200
+        else:
+            client.close()
+            return jsonify({'status': 'invalid'}), 404
+
+@user_routes.route('/allprojects', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_allprojects():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['Data']
+        projects = db['Projects']
+
+        project_list = []
+        for project in projects.find():
+            del project['_id']
+            project_list.append(project)
+
+        client.close()
+
+        return jsonify(project_list), 200
+
+""" @user_routes.route('/deleteusersprojects', methods=['DELETE', 'OPTIONS']) # type: ignore
+def handle_deleteusersprojects():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'DELETE':
+
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        db = client['Data']
+        projects = db['Projects']
+
+        params = request.args
+        ids =     
+
+
+        client.close()
+
+        return jsonify({'status': 'success'}), 200
+ """
 
 def _build_cors_preflight_response():
     response = make_response()
