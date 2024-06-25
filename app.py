@@ -26,10 +26,7 @@ from utils.fileParse import get_log_enabled, tail_file
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
-from user import user_routes
-
 app = Flask(__name__)
-app.register_blueprint(user_routes, url_prefix='/user')
 app.register_blueprint(auth0_api)
 cors = CORS(app, resource={
     r"/*":{
