@@ -1,5 +1,5 @@
 from math import log
-from flask import Flask, request, jsonify, make_response, send_from_directory, send_file, Response, stream_with_context
+from flask import Flask, request, jsonify, make_response, send_from_directory, send_file, Response, stream_with_context, Blueprint
 from flask_cors import CORS
 from flask_mail import Mail, Message
 import os
@@ -22,6 +22,9 @@ from scriptGen import ScriptGen
 
 from utils.formatXML import format_and_overwrite_xml_file
 from utils.fileParse import get_log_enabled, tail_file
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
 app = Flask(__name__)
 app.register_blueprint(auth0_api)
@@ -438,7 +441,7 @@ def handle_run(projectid):
         return 'Simulation started', 200
 
 @app.route('/test', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_test():
+def handle_test1():
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
