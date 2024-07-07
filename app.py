@@ -418,6 +418,23 @@ def handle_getlogfile(projectid, casename, logfilename):
             return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream') """
         
 
+@app.route('/projects/<projectid>', methods=['PATCH', 'OPTIONS']) # type: ignore
+def handle_patch_project(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'PATCH':
+        data = request.get_json()
+
+        project_base = f'./projects/{projectid}'
+        if not os.path.exists(project_base):
+            os.makedirs(project_base)
+
+        if 'projectName' in data:
+            os.rename(project_base, f'./projects/{data["projectName"]}')
+
+        return 'Project updated', 200
+
+
 @app.route('/run/<projectid>', methods=['GET'])  # type: ignore
 def handle_run(projectid):
     if request.method == 'GET':
