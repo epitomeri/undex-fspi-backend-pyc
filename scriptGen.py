@@ -176,9 +176,9 @@ cd Fluid-Inner
         for item in os.listdir(project_base_path):
             item_path = os.path.join(project_base_path, item)
             if os.path.isdir(item_path):
-                if 'allRun' in os.listdir(item_path):
-                    run_script_lines.append(f"chmod 755 {item_path}/allRun")
-                    run_script_lines.append(f"./{item_path}/allRun")
+                if 'Allrun' in os.listdir(item_path):
+                    run_script_lines.append(f"chmod 755 {item_path}/Allrun")
+                    run_script_lines.append(f"./{item_path}/Allrun")
                 if 'runSolid' in os.listdir(item_path):
                     run_script_lines.append(f"chmod 755 {item_path}/runSolid")
                     run_script_lines.append(f"./{item_path}/runSolid")
