@@ -354,9 +354,17 @@ def handle_getlogfiles(projectid):
         for raw_case in os.listdir(project_base):
             if raw_case != "precice-run":
                 case_path = os.path.join(project_base, raw_case)
+                log_files[raw_case] = []
                 if(os.path.isdir(case_path)) and raw_case != 'validation':
+
+                    print(os.listdir(case_path))
                     
-                    if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
+                    for item in os.listdir(case_path):
+                        if item.endswith('.log') or item.startswith('log.'):
+                            log_files[raw_case].append(item)
+
+
+                    """  if os.path.isdir(case_path) and 'system' in os.listdir(case_path):
                         log_files[raw_case] = []
                         log_files[raw_case].append('log.blockMesh')
                         log_files[raw_case].append('log.snappyHexMesh')
@@ -368,7 +376,7 @@ def handle_getlogfiles(projectid):
                     
                     if raw_case == "Solid":
                         log_files[raw_case] = []
-                        log_files[raw_case].append('febio-precice.log')
+                        log_files[raw_case].append('febio-precice.log') """
 
                     if raw_case not in log_files.keys():
                         log_files[raw_case] = []
@@ -381,7 +389,7 @@ def handle_getlogfiles(projectid):
                         log_files[raw_case].append(log_file_name)
 
 
-
+        print(log_files)
         return jsonify(log_files), 200
 
 
