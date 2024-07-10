@@ -170,25 +170,27 @@ cd Fluid-Inner
     @staticmethod
     def gen_run_script(projectid):
         project_base_path = f'./projects/{projectid}'
-        with open(os.path.join(project_base_path, f'run.sh'), 'w') as file:
-            run_script = """cd ./projects/'""" + projectid + """'
-chmod 755 runFluid-Outer
-chmod 755 runFluid-Inner
-chmod 755 runSolid
-chmod 755 runSolid
-chmod 755 Allclean
-chmod 755 ./validation/createGraphs
 
-./Allclean
-./runFluid-Outer > runFluid-Outer.out &
-./runFluid-Inner > runFluid-Inner.out &
-./runSolid > runSolid.out &
-cd Physiology
-python3 *.py &
-"""
-        
+        run_script_lines = []
+
+        for item in os.listdir(project_base_path):
+            item_path = os.path.join(project_base_path, item)
+            if os.path.isdir(item_path):
+                if 'allRun' in os.listdir(item_path):
+                    run_script_lines.append(f"chmod 755 {item_path}/allRun")
+                    run_script_lines.append(f"./{item_path}/allRun")
+                if 'runSolid' in os.listdir(item_path):
+                    run_script_lines.append(f"chmod 755 {item_path}/runSolid")
+                    run_script_lines.append(f"./{item_path}/runSolid")
+                if 'runPulse.py' in os.listdir(item_path):
+                    run_script_lines.append(f"python3 {item_path}/runPulse.py &")
+
+        run_script = "\n".join(run_script_lines)
+
+        with open(os.path.join(project_base_path, 'run.sh'), 'w') as file:
             file.write(run_script)
-            os.chmod(os.path.join(project_base_path, f'run.sh'), 0o777)
+            os.chmod(os.path.join(project_base_path, 'run.sh'), 0o777)
+
 
     @staticmethod
     def gen_validation(projectid):
