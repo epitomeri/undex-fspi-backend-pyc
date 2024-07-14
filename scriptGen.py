@@ -183,7 +183,12 @@ cd Fluid-Inner
                     run_script_lines.append(f"chmod 755 {item_path}/runSolid")
                     run_script_lines.append(f"./{item_path}/runSolid")
                 if 'runPulse.py' in os.listdir(item_path):
-                    run_script_lines.append(f"python3 {item_path}/runPulse.py &")
+                    pulse_install_dir = os.getenv('PULSE_INSTALL_DIR')
+                    run_pulse_dir = os.path.abspath(item_path)
+                    if pulse_install_dir:
+                        run_script_lines.append(f"cd {pulse_install_dir} && python3 {run_pulse_dir}/runPulse.py &")
+                    else:
+                        print("EnvIronment variable PULSE_INSTALL_DIR is not set.")
 
         run_script = "\n".join(run_script_lines)
 
