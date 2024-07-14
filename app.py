@@ -455,12 +455,6 @@ def handle_run(projectid):
         if solid_dir:
             ScriptGen.gen_solid_script(projectid)
 
-        # Check for the existence of a directory starting with 'Fluid'
-        fluid_dir = next((d for d in os.listdir(project_base_path) if os.path.isdir(os.path.join(project_base_path, d)) and d.startswith('Fluid')), None)
-        if fluid_dir:
-            ScriptGen.gen_fluid_script(projectid)
-            subprocess.run(['bash', os.path.join(project_base_path, 'Allclean')])
-
         subprocess.run(['bash', os.path.join(project_base_path, 'run.sh')])
 
         return 'Simulation started', 200
