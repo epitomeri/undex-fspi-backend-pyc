@@ -167,7 +167,3 @@ data = {
     }
 }
 
-generator = PulseConfigGenerator()
-script_path = generator.generate_py_script(data, "example_project")
-print(f"Script generated at: {script_path}")
-
