@@ -264,9 +264,7 @@ def handle_getgraphfiles(projectid):
     elif request.method == 'GET':
         project_base = f'./projects/{projectid}'
         displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
-        physiology_graph_path = f'{os.getenv(
-            "PULSE_INSTALL_DIR"
-        )}/pulseresults.csv'
+        physiology_graph_path = f'{os.getenv("PULSE_INSTALL_DIR")}/pulseresults.csv'
 
 
         graph_files = {
