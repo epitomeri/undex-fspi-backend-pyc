@@ -331,14 +331,15 @@ def handle_getgraphfile(projectid):
             return f"An error occurred: {str(e)}", 500
 
 
-@app.route('/raw/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
+@app.route('/raw/<projectid>/', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getrawgraphfile(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         graphfilename = request.args.get('name')
+        addon = request.args.get('add')
         file_path = f'./projects/{projectid}/{graphfilename}'
-        if ("pulseInstall" in file_path):
+        if (addon == "pulseInstall"):
             file_path = f'{os.getenv("PULSE_INSTALL_DIR")}/{graphfilename}'
         
         try:
@@ -358,7 +359,7 @@ def handle_getrawgraphfile(projectid):
                 return response
 
         except FileNotFoundError:
-            return "File not found", 404
+            return "File not found1", 404
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
