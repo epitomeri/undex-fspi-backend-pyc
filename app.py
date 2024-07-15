@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_mail import Mail, Message
 import os
 import shutil
+from requests import get
 from werkzeug.utils import secure_filename
 import zipfile
 import subprocess
@@ -337,6 +338,9 @@ def handle_getrawgraphfile(projectid):
     elif request.method == 'GET':
         graphfilename = request.args.get('name')
         file_path = f'./projects/{projectid}/{graphfilename}'
+        if ("pulseInstall" in file_path):
+            file_path = f'{os.getenv("PULSE_INSTALL_DIR")}/{graphfilename}'
+        
         try:
             with open(file_path, mode='r', newline='') as file:
                 reader = csv.reader(file)
