@@ -266,13 +266,15 @@ def handle_getgraphfiles(projectid):
         displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
         physiology_graph_path = f'{os.getenv(
             "PULSE_INSTALL_DIR"
-        )}/validation/Physiology/pulseresults.csv'
+        )}/pulseresults.csv'
 
 
         graph_files = {
             "Displacement Response": "",
-            "Pulse Graph": "",
+            "Pulse Graph": physiology_graph_path,
         }
+
+        print(graph_files)
 
         if not os.path.exists(displacement_graph_path):
             del graph_files["Displacement Response"]
@@ -286,14 +288,12 @@ def handle_getgraphfiles(projectid):
             if os.path.isdir(folder_path):
                 for file in os.listdir(folder_path):
                     if file.endswith('.csv'):
-                        if (file == 'pulseresults.csv'):
-                            graph_files["Pulse Graph"] = f'{folder}/{file}'
-                        else:
-                            file_path = os.path.join(folder_path, file)
-                            # Getting the path relative to project_base
-                            relative_path = os.path.relpath(file_path, project_base)
-                            graph_files[relative_path] = relative_path
+                        file_path = os.path.join(folder_path, file)
+                        # Getting the path relative to project_base
+                        relative_path = os.path.relpath(file_path, project_base)
+                        graph_files[relative_path] = relative_path
     
+    print(graph_files)
     return jsonify(graph_files), 200
 
 
