@@ -263,14 +263,19 @@ def handle_getgraphfiles(projectid):
     elif request.method == 'GET':
         project_base = f'./projects/{projectid}'
         displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
+        physiology_graph_path = f'{project_base}/validation/Physiology/pulseresults.csv'
 
 
         graph_files = {
             "Displacement Response": "",
+            "Pulse Graph": "",
         }
 
         if not os.path.exists(displacement_graph_path):
-            graph_files = {}
+            del graph_files["Displacement Response"]
+        if not os.path.exists(physiology_graph_path):
+            del graph_files["Pulse Graph"]
+        
         
     if os.path.exists(project_base):
         for folder in os.listdir(project_base):
@@ -278,10 +283,13 @@ def handle_getgraphfiles(projectid):
             if os.path.isdir(folder_path):
                 for file in os.listdir(folder_path):
                     if file.endswith('.csv'):
-                        file_path = os.path.join(folder_path, file)
-                        # Getting the path relative to project_base
-                        relative_path = os.path.relpath(file_path, project_base)
-                        graph_files[relative_path] = relative_path
+                        if (file == 'pulseresults.csv'):
+                            graph_files["Pulse Graph"] = f'{folder}/{file}'
+                        else:
+                            file_path = os.path.join(folder_path, file)
+                            # Getting the path relative to project_base
+                            relative_path = os.path.relpath(file_path, project_base)
+                            graph_files[relative_path] = relative_path
     
     return jsonify(graph_files), 200
 
@@ -321,6 +329,34 @@ def handle_getgraphfile(projectid):
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
+
+@app.route('/raw/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getrawgraphfile(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        graphfilename = request.args.get('name')
+        file_path = f'./projects/{projectid}/{graphfilename}'
+        try:
+            with open(file_path, mode='r', newline='') as file:
+                reader = csv.reader(file)
+                selected_lines = []
+                for i, line in enumerate(reader):
+
+                    if i % 50 == 0:
+                        print(i, line[0])
+                        #print(line)
+                        selected_lines.append(line)
+                    if len(selected_lines) >= 20:
+                        break
+
+                response = jsonify(selected_lines)
+                return response
+
+        except FileNotFoundError:
+            return "File not found", 404
+        except Exception as e:
+            return f"An error occurred: {str(e)}", 500
 
 
 @app.route('/logfiles/<projectid>', methods=['GET']) # type: ignore
@@ -403,27 +439,6 @@ def handle_getlogfile(projectid, casename, logfilename):
 
         return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
         
-        """ project_base = f'./projects/{projectid}'
-
-        cases = [f for f in os.listdir(project_base) if os.path.isdir(os.path.join(project_base, f))]
-        cases.remove('validation')
-
-        if(logfilename in cases):
-
-            xml_config_path = f'{project_base}/precice-config.xml'
-            _, case_log_filename = get_log_enabled(xml_config_path)
-
-            
-            case_log_path = f'{project_base}/{logfilename}/{case_log_filename}'
-            return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream')
-
-        elif (logfilename == 'Biomechanics'):
-            case_log_path = f'{project_base}/Solid/febio-precice.log'
-            return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream')
-
-        else:
-            case_log_path = f'{project_base}/log.{logfilename}'
-            return Response(stream_with_context(tail_file(case_log_path)), mimetype='text/event-stream') """
         
 
 @app.route('/projects/<projectid>', methods=['PATCH', 'OPTIONS']) # type: ignore
