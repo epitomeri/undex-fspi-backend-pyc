@@ -233,7 +233,6 @@ def handle_febio(projectid):
             ScriptGen.gen_solid_script(projectid)
             return 'File uploaded successfully', 200
     
-
 @app.route("/displacementgraph/<projectid>", methods=['GET', 'OPTIONS']) # type: ignore
 def handle_displacement_graph(projectid):
     if request.method == 'OPTIONS':
@@ -266,13 +265,12 @@ def handle_getgraphfiles(projectid):
         displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
         physiology_graph_path = f'{os.getenv("PULSE_INSTALL_DIR")}/pulseresults.csv'
 
-
+        
         graph_files = {
             "Displacement Response": "",
             "Pulse Graph": physiology_graph_path,
         }
 
-        print(graph_files)
 
         if not os.path.exists(displacement_graph_path):
             del graph_files["Displacement Response"]
@@ -286,12 +284,13 @@ def handle_getgraphfiles(projectid):
             if os.path.isdir(folder_path):
                 for file in os.listdir(folder_path):
                     if file.endswith('.csv'):
-                        file_path = os.path.join(folder_path, file)
-                        # Getting the path relative to project_base
-                        relative_path = os.path.relpath(file_path, project_base)
-                        graph_files[relative_path] = relative_path
+                        if file != 'pulseresults.csv':
+
+                            file_path = os.path.join(folder_path, file)
+                            # Getting the path relative to project_base
+                            relative_path = os.path.relpath(file_path, project_base)
+                            graph_files[relative_path] = relative_path
     
-    print(graph_files)
     return jsonify(graph_files), 200
 
 
@@ -433,12 +432,13 @@ def handle_getlogfile(projectid, casename, logfilename):
         
         
 
-@app.route('/projects/<projectid>', methods=['PATCH', 'OPTIONS']) # type: ignore
+@app.route('/projects/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_project(projectid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
-    elif request.method == 'PATCH':
+    elif request.method == 'POST':
         data = request.get_json()
+
 
         project_base = f'./projects/{projectid}'
         if not os.path.exists(project_base):
@@ -447,7 +447,7 @@ def handle_patch_project(projectid):
         if 'projectName' in data:
             os.rename(project_base, f'./projects/{data["projectName"]}')
 
-        return 'Project updated', 200
+        return {"message": 'Project updated'}, 200
 
 
 @app.route('/run/<projectid>', methods=['GET'])  # type: ignore
