@@ -13,6 +13,8 @@ import json
 from dotenv import load_dotenv
 import csv
 
+import re
+
 from auth0_api import auth0_api
 
 from genXML import PreCICEConfigGenerator
@@ -492,8 +494,151 @@ def verify():
     mail.send(msg)
     return "User verification email has been sent!"
 
+def parse_other_file(filename, content):
+    probes = {}
+    
+    # Split the content into lines
+    lines = content.splitlines()
+    
+    # Parse the probe locations
+    for line in lines:
+        if line.startswith("# Probe"):
+            match = re.match(r"# Probe (\d+) \(([-\d.]+) ([-\d.]+) ([-\d.]+)\)", line)
+            if match:
+                probe_id = f"Probe {match.group(1)}"
+                location = [float(match.group(2)), float(match.group(3)), float(match.group(4))]
+                probes[probe_id] = {'Location': location, 'Data': {}}
+    
+    # Find the header line and the starting index for time values
+    header_line_index = None
+    for i, line in enumerate(lines):
+        if "Time" in line.strip():
+            header_line_index = i
+            break
+    
+    if header_line_index is None:
+        raise ValueError("Header line not found")
+    
+    # Parse the time values from the line following the header
+    for line in lines[header_line_index + 1:]:
+        if line.startswith("#") or line.strip() == '':
+            continue
+        values = line.strip().split()
+        time = values[0]
+        value_list = [float(value) for value in values[1:]]
+        
+        for probe_id in probes:
+            index = int(probe_id.split()[1])
+            probes[probe_id]['Data'][time] = value_list[index]
+    
+    # Construct the final output format
+    probe_indices = tuple(int(probe.split()[1]) for probe in probes.keys())
+    result = {
+        'Name of File': filename,
+        'Probe Indices': probe_indices,
+        'Data': probes
+    }
+    
+    return result
+
+@app.route("/blastfoam/data/<projectid>/<caseName>", methods=['GET', 'OPTIONS'])  # type: ignore
+def fetch_blastfoam_data(projectid, caseName):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        project_base_path = f'./projects/{projectid}'
+        project_base = f'{project_base_path}/{caseName}/postProcessing/probes/0'
+
+        data_files = ['cellDisplacement', 'p', 'U', 'rho']
+        response_data = []
+
+        # Check if the base directory exists
+        if not os.path.exists(project_base):
+            print(f"Project directory does not exist: {project_base}")
+            return jsonify({"error": "Project directory does not exist"}), 404
+
+        for subdir, dirs, files in os.walk(project_base):
+            for file in files:
+                if file in data_files:
+                    file_path = os.path.join(subdir, file)
+                    with open(file_path, 'r') as f:
+                        content = f.read()
+
+                    if file == 'cellDisplacement' or file == 'U':
+                    # Parse content to get the required data format
+	                    parsed_content = parse_file_content(content, file)
+                    else:
+                            parsed_content = parse_other_file(file, content)
+                    
+                    response_data.append({
+                        'subfolder': os.path.relpath(subdir, project_base),
+                        'filename': file,
+                        'content': parsed_content
+                    })
+
+        if not response_data:
+            print("No data files found")
+            return jsonify({"message": "No data files found"}), 200
 
 
+        return jsonify(response_data), 200
+
+
+def parse_file_content(content, filename):
+    probes = {}
+    
+    # Split the content into lines
+    lines = content.splitlines()
+ 
+    # Parse the probe locations
+    for line in lines:
+        if line.startswith("# Probe"):
+            match = re.match(r"# Probe (\d+) \(([-\d.]+) ([-\d.]+) ([-\d.]+)\)", line)
+            if match:
+                probe_id = f"Probe {match.group(1)}"
+                location = [float(match.group(2)), float(match.group(3)), float(match.group(4))]
+                probes[probe_id] = {'Location': location, 'Data': {}}
+    
+    # Find the header line and the starting index for time values
+    header_line_index = None
+    for i, line in enumerate(lines):
+        if "Time" in line.strip():
+            header_line_index = i
+            break
+    
+    if header_line_index is None:
+        raise ValueError("Header line not found")
+    
+    # Parse the header line
+    header_line = lines[header_line_index].strip().split()
+    
+    # Parse the time values from the line following the header
+    for line in lines[header_line_index + 1:]:
+        if line.startswith("#") or line.strip() == '':
+            continue
+        values = line.strip().split()
+        time = values[0]
+        coord_values = values[1:]
+        
+        final_coords = []
+        for i in range(0, len(coord_values), 3):
+            # Remove parentheses and convert strings to integers
+            list_coordinates  = [float(coord_values[i].strip('()')), float(coord_values[i+1].strip('()')), float(coord_values[i+2].strip('()'))]
+            final_coords.append(list_coordinates)
+        
+        for probe_id in probes:
+            index = int(probe_id.split()[1])
+            probes[probe_id]['Data'][time] = final_coords[index]
+    
+    # Construct the final output format
+    probe_indices = tuple(int(probe.split()[1]) for probe in probes.keys())
+    result = {
+        'Name of File': filename,
+        'Probe Indices': probe_indices,
+        'Data': probes
+    }
+    
+    return result
 
 def _build_cors_preflight_response():
     response = make_response()
