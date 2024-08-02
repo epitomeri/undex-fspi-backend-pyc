@@ -458,6 +458,18 @@ def handle_patch_project(projectid):
 
         return {"message": 'Project updated'}, 200
 
+
+def delete_directory(path):
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            file_path = os.path.join(root, name)
+            os.remove(file_path)
+        for name in dirs:
+            dir_path = os.path.join(root, name)
+            os.rmdir(dir_path)
+    os.rmdir(path)
+
+
 @app.route('/deleteproject/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_delete_project(projectid):
     if request.method == 'OPTIONS':
@@ -465,7 +477,7 @@ def handle_delete_project(projectid):
     elif request.method == 'GET':
         project_base = f'./projects/{projectid}'
         if os.path.exists(project_base):
-            shutil.rmtree(project_base)
+            delete_directory(project_base)
             return {"message": 'Project deleted'}, 200
         else:
             return {"message": 'Project not found'}, 404
