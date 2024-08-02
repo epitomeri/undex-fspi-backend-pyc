@@ -178,6 +178,9 @@ cd Fluid-Inner
             if os.path.isdir(item_path):
                 if 'Allrun' in os.listdir(item_path):
                     run_script_lines.append(f"chmod 755 {item_path}/Allrun")
+                    run_script_lines.append(f"chmod 755 {item_path}/Allclean")
+                    run_script_lines.append(f"./{item_path}/Allclean")
+                    run_script_lines.append(f"rm -f {item_path}/log.*")
                     run_script_lines.append(f"./{item_path}/Allrun")
                 if 'runSolid' in os.listdir(item_path):
                     run_script_lines.append(f"chmod 755 {item_path}/runSolid")
