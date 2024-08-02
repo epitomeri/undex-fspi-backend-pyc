@@ -375,13 +375,7 @@ def handle_getlogfiles(projectid):
         if not os.path.exists(project_base):
             os.makedirs(project_base)
     
-
-        log_files = {
-            
-        }
-
-
-
+        log_files = {}
         xml_config_path = f'{project_base}/precice-config.xml'
         log_file_name = ""
 
@@ -389,7 +383,6 @@ def handle_getlogfiles(projectid):
         lfm = None
 
         if os.path.exists(xml_config_path):
-            
             enabled, lfm = get_log_enabled(xml_config_path)
             log_file_name = lfm if lfm is not None else log_file_name
 
@@ -398,28 +391,22 @@ def handle_getlogfiles(projectid):
                 case_path = os.path.join(project_base, raw_case)
                 if os.path.isdir(case_path) and raw_case != 'validation':
                     log_files[raw_case] = []
-                if(os.path.isdir(case_path)) and raw_case != 'validation':
-
-                    print(os.listdir(case_path))
-                    
                     for item in os.listdir(case_path):
-                        if item.endswith('.log') or item.startswith('log.'):
+                        item_path = os.path.join(case_path, item)
+                        if os.path.isfile(item_path) and (item.endswith('.log') or item.startswith('log.')):
                             log_files[raw_case].append(item)
-
-
-                    if raw_case not in log_files.keys():
-                        log_files[raw_case] = []
-                        log_files[raw_case] = [f for f in os.listdir(case_path) if f.endswith('.log')]
+                    
+                    # Sort log files by last modified time
+                    log_files[raw_case].sort(key=lambda f: os.path.getmtime(os.path.join(case_path, f)), reverse=True)
+                    
+                    if enabled == 'True':  # type: ignore
+                        log_files[raw_case].append(log_file_name)
 
                     if len(log_files[raw_case]) == 0:
                         log_files.pop(raw_case)
-                
-                    if enabled == 'True': # type: ignore
-                        log_files[raw_case].append(log_file_name)
-
-
-        print(log_files)
+        
         return jsonify(log_files), 200
+
 
 
 @app.route('/logfile/<projectid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
@@ -432,6 +419,26 @@ def handle_getlogfile(projectid, casename, logfilename):
 
         return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
         
+        
+@app.route('/download/<projectid>/', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_download(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        project_base = f'./projects/{projectid}'
+
+
+        args = request.args
+        filename = args.get('filename')
+
+        if not filename:
+            return "No filename provided", 400
+
+        # return the file as an attachment
+
+        return send_from_directory(project_base, filename, as_attachment=True)
+
+
         
 
 @app.route('/projects/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
@@ -450,6 +457,18 @@ def handle_patch_project(projectid):
             os.rename(project_base, f'./projects/{data["projectName"]}')
 
         return {"message": 'Project updated'}, 200
+
+@app.route('/deleteproject/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_delete_project(projectid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        project_base = f'./projects/{projectid}'
+        if os.path.exists(project_base):
+            shutil.rmtree(project_base)
+            return {"message": 'Project deleted'}, 200
+        else:
+            return {"message": 'Project not found'}, 404
 
 
 @app.route('/run/<projectid>', methods=['GET'])  # type: ignore
@@ -493,6 +512,11 @@ def verify():
     msg.body = 'You may now access the Simulation webapp.\nhttps://undexfspi.com'
     mail.send(msg)
     return "User verification email has been sent!"
+
+
+
+#TODO: FIX THIS
+
 
 def parse_other_file(filename, content):
     probes = {}
@@ -566,7 +590,7 @@ def fetch_blastfoam_data(projectid, caseName):
 
                     if file == 'cellDisplacement' or file == 'U':
                     # Parse content to get the required data format
-	                    parsed_content = parse_file_content(content, file)
+                        parsed_content = parse_file_content(content, file)
                     else:
                             parsed_content = parse_other_file(file, content)
                     
