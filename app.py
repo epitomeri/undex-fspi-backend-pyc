@@ -126,10 +126,24 @@ def handle_febiogen(projectid):
             file = request.files['meshFile']
             file.save(f'./tmp/{projectid}/Solid/{file.filename}')
             mesh_path = f'./tmp/{projectid}/Solid/{file.filename}'
+        else:
+            default_bc_file = './resources/mesh.feb'
+            if os.path.exists(default_bc_file):
+                mesh_path = default_bc_file
+            else:
+                return jsonify({'error': 'Default mesh file not found.'}), 400
+
         if 'boundaryConditionsFile' in request.files:
             file = request.files['boundaryConditionsFile']
             file.save(f'./tmp/{projectid}/Solid/{file.filename}')
             boundary_path = f'./tmp/{projectid}/Solid/{file.filename}'
+        else:
+            default_bc_file = './resources/bc-txt'
+            if os.path.exists(default_bc_file):
+                boundary_path = default_bc_file
+            else:
+                return jsonify({'error': 'Default bc file not found.'}), 400
+
 
         solver_case_json = request.form.get('solverCase')
         data = json.loads(solver_case_json) # type: ignore

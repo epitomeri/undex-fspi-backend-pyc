@@ -14,6 +14,7 @@ class FebioConfigGenerator():
     def generate_xml(self, data, projectid, meshPath, boundaryPath):
 
 
+
         febio_spec = ET.Element("febio_spec", version="3.0")
 
         if(data['moduleType']['type'] == "implicit"):
@@ -26,12 +27,11 @@ class FebioConfigGenerator():
         for i, material in enumerate(data['material']['materials']):
             material1 = ET.SubElement(materials, "material", id=f'{i + 1}', name=material['name'], type=material['type'])
             density1 = ET.SubElement(material1, "density")
-            density1.text = material['density']
+            density1.text = str(material['density'])
             E1 = ET.SubElement(material1, "E")
-            E1.text = material['young']
+            E1.text = str(material['young'])
             v1 = ET.SubElement(material1, "v")
-            v1.text = material['poisson']
-
+            v1.text = str(material['poisson'])
 
         
 
@@ -135,18 +135,23 @@ class FebioConfigGenerator():
 
 
 
-            
-
-
         file_path = f'./projects/{projectid}/Solid/febio-case.feb'
+
+        print('file_path', file_path)
 
         #Writing to tree
 
         tree = ET.ElementTree(febio_spec)
 
+        for elem in tree.iter():
+            for key, value in elem.attrib.items():
+                print(f"Element: {elem.tag}, Attribute: {key}, Value: {value}")
+                if value is None:
+                    elem.attrib[key] = ''
         tree.write(file_path, xml_declaration=True, encoding='utf-8')
         
         format_and_overwrite_xml_file(file_path)
+
 
 
         
