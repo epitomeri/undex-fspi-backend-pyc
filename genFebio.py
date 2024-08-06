@@ -153,7 +153,7 @@ class FebioConfigGenerator():
         
         format_and_overwrite_xml_file(file_path)
 
-
+        shutil.copyfile("./resources/mesh.feb", './resources/meshOriginal.feb')
 
         
 
@@ -161,8 +161,6 @@ class FebioConfigGenerator():
         source_file_path = boundaryPath 
         target_file_path = meshPath 
         temp_file_path = target_file_path + '.tmp'  
-
-        insert_tag = '</MeshDomains>'
 
         insert_tag = '</MeshDomains>'
 
@@ -211,6 +209,10 @@ class FebioConfigGenerator():
 
         # Replace the original file with the modified content
         shutil.move(temp_file_path, target_file_path)
+
+
+        os.remove(meshPath)
+        shutil.move('./resources/meshOriginal.feb', './resources/mesh.feb')
 
 
 
