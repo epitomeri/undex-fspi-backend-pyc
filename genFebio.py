@@ -75,7 +75,7 @@ class FebioConfigGenerator():
             var2 = ET.SubElement(plotfile, "var", type="shell strain")
             var3 = ET.SubElement(plotfile, "var", type="shell thickness")
             var4 = ET.SubElement(plotfile, "var", type="stress")
-            var5 = ET.SubElement(plotfile, "var", type="parameter['fem.surface_load[0].pressure']=Pressure")
+
 
 
 
@@ -114,7 +114,7 @@ class FebioConfigGenerator():
             for j, load in enumerate(step['loads']):
                 if(load['loadType'] == "pressure"):
                     surface_load = ET.SubElement(loads, "surface_load", name=load[
-                        'pressureLabel'], type=load['loadType'].lower(), surface="Solid")
+                        'pressureLabel'], type=load['loadType'].lower(), surface="LungsFSI")
 
                     if(load['pressureValType'] == "numeric"):
                         pressure = ET.SubElement(surface_load, "pressure", lc=f'{i + 1}')
@@ -181,7 +181,7 @@ class FebioConfigGenerator():
         target_file_path = file_path
         temp_file_path = target_file_path + '.tmp'
 
-        insert_tag = '<SurfaceData name="'
+        insert_tag = '<MeshData>'
 
         # Read the source file content, excluding the </MeshData> tag
         with open(source_file_path, 'r') as source_file:
@@ -195,6 +195,7 @@ class FebioConfigGenerator():
             for line in target_file:
                 # Insert the source content before the insert_tag
                 if not inserted and insert_tag in line:
+                    print("THIS IS THE LINE", line)
                     temp_file.writelines(source_content)
                     inserted = True
                 # Check if the current line is the closing </SurfaceData> tag
@@ -211,9 +212,8 @@ class FebioConfigGenerator():
         shutil.move(temp_file_path, target_file_path)
 
 
-        os.remove(meshPath)
         shutil.move('./resources/meshOriginal.feb', './resources/mesh.feb')
-
+    
 
 
 
