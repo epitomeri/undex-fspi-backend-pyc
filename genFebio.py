@@ -15,12 +15,9 @@ class FebioConfigGenerator():
 
 
 
-        febio_spec = ET.Element("febio_spec", version="3.0")
+        febio_spec = ET.Element("febio_spec", version="4.0")
 
-        if(data['moduleType']['type'] == "implicit"):
-            module = ET.SubElement(febio_spec, "Module", type="solid")
-        else:
-            module = ET.SubElement(febio_spec, "Module", type="explicit-solid")
+        module = ET.SubElement(febio_spec, "Module", type="solid")
 
         materials = ET.SubElement(febio_spec, "Material")
         
@@ -36,7 +33,8 @@ class FebioConfigGenerator():
         
 
         if(data['dataMapped']['type'] == "pressure"):
-                surface_data = ET.SubElement(febio_spec, "SurfaceData", name="Pressure", generator="const", datatype="scalar", surface="Solid")
+                mesh_data = ET.SubElement(febio_spec, "MeshData")
+                surface_data = ET.SubElement(mesh_data, "SurfaceData", name="Pressure", type="const", data_type="scalar", surface="LungsFSI")
 
                 surface_value = ET.SubElement(surface_data, "value")
                 surface_value.text = "0.0"
@@ -80,6 +78,7 @@ class FebioConfigGenerator():
             var5 = ET.SubElement(plotfile, "var", type="parameter['fem.surface_load[0].pressure']=Pressure")
 
 
+
         steps = ET.SubElement(febio_spec, "Step")
 
         for i, step in enumerate(data['step']['steps']):
@@ -96,7 +95,10 @@ class FebioConfigGenerator():
             step_size.text = step['stepSize']
 
             if(step['analysisType'] == "dynamic"):
-                solver = ET.SubElement(control, "solver")
+                if (step['moduleType'] == 'explicit'):
+                    solver = ET.SubElement(control, "solver", type="explicit-solid")
+                else:
+                    solver = ET.SubElement(control, "solver", type="solid")
                 
                 mass_lumping = ET.SubElement(solver, "mass_lumping")
                 mass_lumping.text = step['massLumping']
@@ -134,7 +136,6 @@ class FebioConfigGenerator():
 
 
 
-
         file_path = f'./projects/{projectid}/Solid/febio-case.feb'
 
         print('file_path', file_path)
@@ -161,18 +162,19 @@ class FebioConfigGenerator():
         target_file_path = meshPath 
         temp_file_path = target_file_path + '.tmp'  
 
-        insert_tag = '<Surface name="'
+        insert_tag = '</MeshDomains>'
+
+        insert_tag = '</MeshDomains>'
 
         with open(source_file_path, 'r') as source_file:
             source_content = source_file.readlines()
 
         with open(temp_file_path, 'w') as temp_file, open(target_file_path, 'r') as target_file:
-            inserted = False
             for line in target_file:
-                if not inserted and insert_tag in line:
-                    temp_file.writelines(source_content)  
-                    inserted = True
-                temp_file.write(line) 
+                temp_file.write(line)
+                if insert_tag in line:
+                    temp_file.writelines(source_content)
+
         shutil.move(temp_file_path, target_file_path)
 
 
@@ -204,8 +206,6 @@ class FebioConfigGenerator():
                 # If we've inserted the source content and just wrote the closing </SurfaceData> tag,
                 # it's time to insert the </MeshData> tag
                 if inserted and surface_data_closed:
-                    temp_file.write(mesh_data_end_tag)
-                    # Reset the flag if you expect multiple </SurfaceData> sections
                     surface_data_closed = False
                     inserted = False  # Reset inserted if needed to handle multiple insertions
 
