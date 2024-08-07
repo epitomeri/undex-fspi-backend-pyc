@@ -68,6 +68,47 @@ def handle_options(response):
 
     return response
 
+def update_control_dict(projectid, blastfoam_folder):
+    """
+    Updates the controlDict file in the specified blastfoam folder to change stopAt to noWriteNow.
+    """
+    control_dict_path = os.path.join('./projects', projectid, blastfoam_folder, 'system', 'controlDict')
+
+    # Check if the file exists
+    if not os.path.exists(control_dict_path):
+        return {"error": "controlDict file does not exist."}, 404
+
+    # Read and update the controlDict file
+    try:
+        with open(control_dict_path, 'r') as file:
+            lines = file.readlines()
+
+        # Update stopAt value
+        with open(control_dict_path, 'w') as file:
+            for line in lines:
+                if line.strip().startswith("stopAt"):
+                    file.write("stopAt          noWriteNow;\n")
+                else:
+                    file.write(line)
+
+        return {"message": "controlDict updated successfully."}, 200
+
+    except Exception as e:
+        return {"error": f"Failed to update controlDict: {str(e)}"}, 500
+
+@app.route("/update_control_dict/<projectid>/<blastfoam_folder>", methods=['GET', 'POST', 'OPTIONS'])
+def update_control_dict_endpoint(projectid, blastfoam_folder):
+    """
+    API endpoint to update the controlDict file's stopAt value in the specified blastfoam folder.
+    """
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+
+    if request.method == 'POST' or request.method == 'GET':
+        # Call the function to update controlDict
+        result, status_code = update_control_dict(projectid, blastfoam_folder)
+        return jsonify(result), status_code
+
 def get_public_ip():
     try:
         # Use an external service to get the public IP address
