@@ -12,8 +12,11 @@ import xml.etree.ElementTree as ET
 import json
 from dotenv import load_dotenv
 import csv
+import requests
 
 import re
+import socket
+
 
 from auth0_api import auth0_api
 
@@ -30,6 +33,10 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
 app = Flask(__name__)
+
+# Store the running pvserver process
+pvserver_process = None
+
 app.register_blueprint(auth0_api)
 cors = CORS(app, resource={
     r"/*":{
@@ -60,6 +67,78 @@ def handle_options(response):
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-Requested-With"
 
     return response
+
+def get_public_ip():
+    try:
+        # Use an external service to get the public IP address
+        response = requests.get('https://api.ipify.org?format=json')
+        ip_data = response.json()
+        return ip_data['ip']
+    except requests.RequestException as e:
+        return "Unable to retrieve public IP"
+
+@app.route("/pvserver/<projectid>", methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
+def manage_pvserver(projectid):
+    global pvserver_process
+
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
+    # Start the server
+    elif request.method == 'POST' or request.method == 'GET':
+        if pvserver_process and pvserver_process.poll() is None:
+            return jsonify({"error": "PVServer is already running."}), 409
+
+        projects_dir = f'./projects/{projectid}'
+
+        if not os.path.exists(projects_dir):
+            return jsonify({"error": f"Project directory '{projectid}' does not exist."}), 404
+
+        try:
+            # Execute the pvserver command in the specified project directory
+            pvserver_process = subprocess.Popen(['pvserver'], cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+            # Read the output line by line to capture the connection details
+            port = None
+            while True:
+                output = pvserver_process.stdout.readline()
+                if "Connection URL" in output:
+                    # Extract the port number from the output
+                    port = output.split(':')[-1].strip()
+                    break
+
+            if port is None:
+                return jsonify({"error": "Failed to start pvserver and retrieve port information."}), 500
+
+            # Get the public IP address of the server
+            public_ip = get_public_ip()
+
+            # Construct the response data with the correct public information
+            response_data = {
+                "message": "PVServer started successfully.",
+                "connection_url": f"cs://{public_ip}:{port}",
+                "port": port,
+                "ip_address": public_ip
+            }
+
+            return jsonify(response_data), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # Stop the server
+    elif request.method == 'DELETE':
+        if pvserver_process and pvserver_process.poll() is None:
+            try:
+                # Terminate the pvserver process
+                pvserver_process.terminate()
+                pvserver_process.wait()
+                pvserver_process = None
+                return jsonify({"message": "PVServer stopped successfully."}), 200
+            except Exception as e:
+                return jsonify({"error": f"Failed to stop pvserver: {str(e)}"}), 500
+        else:
+            return jsonify({"error": "PVServer is not running."}), 400
 
 
 @app.route("/blastfoamgen/<projectid>", methods=['POST', 'OPTIONS'])  # type: ignore
@@ -129,7 +208,6 @@ def handle_febiogen(projectid):
         else:
             default_bc_file = './resources/mesh.feb'
 
-
             if os.path.exists(default_bc_file):
                 mesh_path = default_bc_file
             else:
@@ -146,20 +224,15 @@ def handle_febiogen(projectid):
             else:
                 return jsonify({'error': 'Default bc file not found.'}), 401
 
-
         solver_case_json = request.form.get('solverCase')
         data = json.loads(solver_case_json) # type: ignore
-        
 
         generator = FebioConfigGenerator()
-        
 
         output_file_path = generator.generate_xml(data, projectid, mesh_path, boundary_path)
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
-
-        
 
         ScriptGen.gen_clean_script(projectid)
         ScriptGen.gen_solid_script(projectid)
