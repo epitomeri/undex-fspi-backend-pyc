@@ -196,12 +196,17 @@ def handle_blastfoam(projectid):
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
 
-        for case_name in request.files:
+        for mesh_key in request.files:
             
-            mesh = request.files.get(case_name)
-            if not os.path.exists(f'{projects_dir}/{mesh.name}/constant/geometry'): # type: ignore
-                os.makedirs(f'{projects_dir}/{mesh.name}/constant/geometry') # type: ignore
-            mesh.save(f'{projects_dir}/{mesh.name}/constant/geometry/{mesh.filename}') # type: ignore
+            mesh = request.files.get(mesh_key)
+            # {casename}_{patchname}
+            case_name = mesh_key.split('#')[0]
+            print(mesh.name)
+            print(case_name)
+            
+            if not os.path.exists(f'{projects_dir}/{case_name}/constant/geometry'): # type: ignore
+                os.makedirs(f'{projects_dir}/{case_name}/constant/geometry') # type: ignore
+            mesh.save(f'{projects_dir}/{case_name}/constant/geometry/{mesh.filename}') # type: ignore
 
         
         for blastfoam_file in files:
