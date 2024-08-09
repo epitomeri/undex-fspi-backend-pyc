@@ -574,8 +574,6 @@ def handle_download(projectid):
         return send_from_directory(project_base, filename, as_attachment=True)
 
 
-        
-
 @app.route('/projects/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_project(projectid):
     if request.method == 'OPTIONS':
@@ -750,7 +748,6 @@ def fetch_blastfoam_data(projectid, caseName):
         if not response_data:
             print("No data files found")
             return jsonify({"message": "No data files found"}), 200
-
 
         return jsonify(response_data), 200
 
