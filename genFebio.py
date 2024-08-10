@@ -100,7 +100,9 @@ class FebioConfigGenerator():
             var2 = ET.SubElement(plotfile, "var", type="shell strain")
             var3 = ET.SubElement(plotfile, "var", type="shell thickness")
             var4 = ET.SubElement(plotfile, "var", type="stress")
-            var5 = ET.SubElement(plotfile, "var", type="parameter['fem.surface_load[0].pressure']=Pressure")
+            # Only include valid output variables
+            # Remove or comment out the invalid output variable
+            # var5 = ET.SubElement(plotfile, "var", type="parameter['fem.surface_load[0].pressure']=Pressure")
 
         steps = ET.SubElement(febio_spec, "Step")
 
