@@ -97,6 +97,13 @@ def handle_blastfoam(projectid):
                 if 'Allclean' in file_path or 'Allrun' in file_path:
                     os.chmod(f'{projects_dir}/{file_path}', 0o777)
 
+        for item in os.listdir(projects_dir):
+            item_path = os.path.join(projects_dir, item)
+            if os.path.isdir(item_path):
+                if 'Allclean' in os.listdir(item_path):
+                    os.chmod(os.path.join(item_path, 'Allclean'), 0o755)
+                    subprocess.run(['bash', os.path.join(item_path, 'Allclean')])
+
 
         zip_file_name = os.path.basename(projects_dir) + '.zip'
         zip_file_path = os.path.join('./tmp', secure_filename(zip_file_name)) # type: ignore
@@ -163,6 +170,7 @@ def handle_febiogen(projectid):
 
         ScriptGen.gen_clean_script(projectid)
         ScriptGen.gen_solid_script(projectid)
+
         return send_from_directory(directory, filename, as_attachment=True) 
 
 @app.route('/pulsegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
@@ -187,6 +195,15 @@ def handle_pulsegen(projectid):
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
+
+
+        for item in os.listdir(directory_path):
+            item_path = os.path.join(directory_path, item)
+            if os.path.isdir(item_path):
+                if 'Allclean' in os.listdir(item_path):
+                    os.chmod(os.path.join(item_path, 'Allclean'), 0o755)
+                    subprocess.run(['bash', os.path.join(item_path, 'Allclean')])
+
 
         return send_from_directory(directory, filename, as_attachment=True)
 
@@ -432,6 +449,8 @@ def handle_getlogfile(projectid, casename, logfilename):
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         file_path = f'./projects/{projectid}/{casename}/{logfilename}'
+
+        print("THIS IS THE FILEPATH: ", file_path)
 
         return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
         
