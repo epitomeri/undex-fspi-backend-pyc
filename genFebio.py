@@ -2,10 +2,6 @@ import xml.etree.ElementTree as ET
 import xml.dom.minidom
 import re
 import os
-import shutil
-
-from jinja2 import Undefined
-from utils.formatXML import format_and_overwrite_xml_file
 
 class FebioConfigGenerator():
     def __init__(self) -> None:
@@ -13,212 +9,170 @@ class FebioConfigGenerator():
 
     def generate_xml(self, data, projectid, meshPath, boundaryPath):
 
+        def safe_attrib(value):
+            """Ensures that the attribute value is a string and not None."""
+            return str(value) if value is not None else ""
 
+        def find_surface_names(mesh_content):
+            """Find all surface names in mesh content."""
+            return re.findall(r'<Surface\s+name="([^"]+)"', mesh_content)
 
         febio_spec = ET.Element("febio_spec", version="4.0")
 
-        module = ET.SubElement(febio_spec, "Module", type="solid")
+        module = ET.SubElement(febio_spec, "Module", type=safe_attrib("solid"))
 
         materials = ET.SubElement(febio_spec, "Material")
-        
+
         for i, material in enumerate(data['material']['materials']):
-            material1 = ET.SubElement(materials, "material", id=f'{i + 1}', name=material['name'], type=material['type'])
+            material1 = ET.SubElement(materials, "material", id=safe_attrib(i + 1), name=safe_attrib(material['name']), type=safe_attrib(material['type']))
             density1 = ET.SubElement(material1, "density")
-            density1.text = str(material['density'])
+            density1.text = safe_attrib(material['density'])
             E1 = ET.SubElement(material1, "E")
-            E1.text = str(material['young'])
+            E1.text = safe_attrib(material['young'])
             v1 = ET.SubElement(material1, "v")
-            v1.text = str(material['poisson'])
+            v1.text = safe_attrib(material['poisson'])
 
-        
+        # Write the initial tree to string
+        xml_str = ET.tostring(febio_spec, encoding='utf-8').decode('utf-8')
 
-        if(data['dataMapped']['type'] == "pressure"):
-                mesh_data = ET.SubElement(febio_spec, "MeshData")
-                surface_data = ET.SubElement(mesh_data, "SurfaceData", name="Pressure", type="const", data_type="scalar", surface="LungsFSI")
+        # Read the content of mesh.feb
+        with open(meshPath, 'r') as mesh_file:
+            mesh_content = mesh_file.read()
 
-                surface_value = ET.SubElement(surface_data, "value")
-                surface_value.text = "0.0"
+        # Insert the content of mesh.feb right after the </Material> tag
+        insertion_point = xml_str.find('</Material>')
+        xml_str = xml_str[:insertion_point + len('</Material>')] + '\n' + mesh_content + xml_str[insertion_point + len('</Material>'):]
 
-        boundary = ET.SubElement(febio_spec, "Boundary")
-        node_set_name = next((line.split('name="')[1].split('"')[0] for line in open(boundaryPath) if '<NodeSet name="' in line), None)
-        bc1 = ET.SubElement(boundary, "bc",name=node_set_name, type = "fix", node_set=node_set_name) # type: ignore
-        dofs1 = ET.SubElement(bc1, "dofs")
-        dofs1.text = "x,y,z"
+        # Read the content of bcfile.txt (boundary file)
+        with open(boundaryPath, 'r') as boundary_file:
+            boundary_content = boundary_file.read()
 
-        bc2 = ET.SubElement(boundary, "bc", name=node_set_name, type = "fix", node_set=node_set_name) # type: ignore
-        dofs2 = ET.SubElement(bc2, "dofs")
-        dofs2.text = "sx,sy,sz"
+        # Insert the content of bcfile.txt right after the mesh content
+        insertion_point = xml_str.find('</Mesh>')
+        xml_str = xml_str[:insertion_point + len('</Mesh>')] + '\n' + boundary_content + xml_str[insertion_point + len('</Mesh>'):]
 
+        # Parse the updated string back into an XML structure
+        febio_spec = ET.fromstring(xml_str)
 
+        # Extract surface names from mesh content
+        surface_names = find_surface_names(mesh_content)
+        print("Surface names found in mesh:", surface_names)
+
+        # Add MeshData and SurfaceData
+        mesh_data = ET.SubElement(febio_spec, "MeshData")
+        if data['dataMapped']['type'] == "pressure":
+            surface_data = ET.SubElement(mesh_data, "SurfaceData", name="Pressure", type="const", data_type="scalar", surface="LungsFSI")
+            surface_value = ET.SubElement(surface_data, "value")
+            surface_value.text = "0.0"
+
+        # Check if the node_set exists in mesh.feb content
+        node_set_name = "exampleNodeSet"
+        if node_set_name in mesh_content:
+            # Add Boundary only if node_set_name exists in mesh.feb content
+            boundary = ET.SubElement(febio_spec, "Boundary")
+            bc1 = ET.SubElement(boundary, "bc", name=safe_attrib(node_set_name), type=safe_attrib("fix"), node_set=safe_attrib(node_set_name))
+            dofs1 = ET.SubElement(bc1, "dofs")
+            dofs1.text = "x,y,z"
+
+            bc2 = ET.SubElement(boundary, "bc", name=safe_attrib(node_set_name), type=safe_attrib("fix"), node_set=safe_attrib(node_set_name))
+            dofs2 = ET.SubElement(bc2, "dofs")
+            dofs2.text = "sx,sy,sz"
 
         load_data = ET.SubElement(febio_spec, "LoadData")
-        
+
         for i, load in enumerate(data['loadController']['loadControllers']):
-            load_controller = ET.SubElement(load_data, "load_controller", id=str(i + 1), type=load['type'].lower())
+            load_controller = ET.SubElement(load_data, "load_controller", id=safe_attrib(i + 1), type=safe_attrib(load['type'].lower()))
             interpolate = ET.SubElement(load_controller, "interpolate")
-            interpolate.text = load['interpolation'].upper()
+            interpolate.text = safe_attrib(load['interpolation'].upper())
 
             points = ET.SubElement(load_controller, "points")
             firstPoint = ET.SubElement(points, "point")
-            firstPoint.text = load['firstPoint']
+            firstPoint.text = safe_attrib(load['firstPoint'])
 
             secondPoint = ET.SubElement(points, "point")
-            secondPoint.text = load['secondPoint']
-        
-
+            secondPoint.text = safe_attrib(load['secondPoint'])
 
         output = ET.SubElement(febio_spec, "Output")
 
-        if(data['step']['steps'][0]['loads'][0]['loadType'] == "pressure"):
+        if data['step']['steps'][0]['loads'][0]['loadType'] == "pressure":
             plotfile = ET.SubElement(output, "plotfile", type="febio")
             var1 = ET.SubElement(plotfile, "var", type="displacement")
             var2 = ET.SubElement(plotfile, "var", type="shell strain")
             var3 = ET.SubElement(plotfile, "var", type="shell thickness")
             var4 = ET.SubElement(plotfile, "var", type="stress")
-
-
-
+            # Only include valid output variables
+            # Remove or comment out the invalid output variable
+            # var5 = ET.SubElement(plotfile, "var", type="parameter['fem.surface_load[0].pressure']=Pressure")
 
         steps = ET.SubElement(febio_spec, "Step")
 
         for i, step in enumerate(data['step']['steps']):
-            step_block = ET.SubElement(steps, "step", id=f'{i + 1}', name = step["name"])
+            step_block = ET.SubElement(steps, "step", id=safe_attrib(i + 1), name=safe_attrib(step["name"]))
 
             control = ET.SubElement(step_block, "Control")
             analysis = ET.SubElement(control, "analysis")
-            analysis.text = step['analysisType'].upper()
+            analysis.text = safe_attrib(step['analysisType'].upper())
 
             time_steps = ET.SubElement(control, "time_steps")
-            time_steps.text = str(step['timeSteps'])
+            time_steps.text = safe_attrib(step['timeSteps'])
 
             step_size = ET.SubElement(control, "step_size")
-            step_size.text = step['stepSize']
+            step_size.text = safe_attrib(step['stepSize'])
 
-            if(step['analysisType'] == "dynamic"):
-                if (step['moduleType'] == 'explicit'):
+            if step['analysisType'] == "dynamic":
+                if step['moduleType'] == 'explicit':
                     solver = ET.SubElement(control, "solver", type="explicit-solid")
                 else:
                     solver = ET.SubElement(control, "solver", type="solid")
-                
+
                 mass_lumping = ET.SubElement(solver, "mass_lumping")
-                mass_lumping.text = step['massLumping']
+                mass_lumping.text = safe_attrib(step['massLumping'])
 
                 dyn_damping = ET.SubElement(solver, "dyn_damping")
-                dyn_damping.text = step['dynamicLumping']
+                dyn_damping.text = safe_attrib(step['dynamicLumping'])
 
             plot_stride = ET.SubElement(control, "plot_stride")
-            plot_stride.text = str(step['plotStride'])
+            plot_stride.text = safe_attrib(step['plotStride'])
 
             loads = ET.SubElement(step_block, "Loads")
-
             for j, load in enumerate(step['loads']):
-                if(load['loadType'] == "pressure"):
-                    surface_load = ET.SubElement(loads, "surface_load", name=load[
-                        'pressureLabel'], type=load['loadType'].lower(), surface="LungsFSI")
+                if load['loadType'] == "pressure":
+                    # Find the correct surface name
+                    surface_name = "Solid"  # Default value
+                    if surface_names:
+                        surface_name = surface_names[0]  # Use the first found surface name
 
-                    if(load['pressureValType'] == "numeric"):
-                        pressure = ET.SubElement(surface_load, "pressure", lc=f'{i + 1}')
-                        pressure.text = load['pressure']
-                    elif(load['pressureValType'] == "expression"):
-                        pressure = ET.SubElement(surface_load, "pressure", lc=f'{i + 1}', type="math")
-                        pressure.text = load['pressure']
-                    elif(load['pressureValType'] == "map"):
+                    surface_load = ET.SubElement(loads, "surface_load", name=safe_attrib(load['pressureLabel']), type=safe_attrib(load['loadType'].lower()), surface=surface_name)
+
+                    if load['pressureValType'] == "numeric":
+                        pressure = ET.SubElement(surface_load, "pressure", lc=safe_attrib(i + 1))
+                        pressure.text = safe_attrib(load['pressure'])
+                    elif load['pressureValType'] == "expression":
+                        pressure = ET.SubElement(surface_load, "pressure", lc=safe_attrib(i + 1), type="math")
+                        pressure.text = safe_attrib(load['pressure'])
+                    elif load['pressureValType'] == "map":
                         pressure = ET.SubElement(surface_load, "pressure", type="map")
                         pressure.text = "Pressure"
 
-
                     linear = ET.SubElement(surface_load, "linear")
-                    linear.text = load['linearParam']
+                    linear.text = safe_attrib(load['linearParam'])
                     symmetric_stiffness = ET.SubElement(surface_load, "symmetric_stiffness")
-                    symmetric_stiffness.text = load['matrix']
+                    symmetric_stiffness.text = safe_attrib(load['matrix'])
                     shell_bottom = ET.SubElement(surface_load, "shell_bottom")
-                    shell_bottom.text = load['pressureTop']
-
-
+                    shell_bottom.text = safe_attrib(load['pressureTop'])
 
         file_path = f'./projects/{projectid}/Solid/febio-case.feb'
 
         print('file_path', file_path)
 
-        #Writing to tree
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
+        # Write the final XML tree to file
         tree = ET.ElementTree(febio_spec)
+        tree.write(file_path, encoding="utf-8", xml_declaration=True)
 
-        for elem in tree.iter():
-            for key, value in elem.attrib.items():
-                print(f"Element: {elem.tag}, Attribute: {key}, Value: {value}")
-                if value is None:
-                    elem.attrib[key] = ''
-        tree.write(file_path, xml_declaration=True, encoding='utf-8')
-        
-        format_and_overwrite_xml_file(file_path)
+        print(f"File written: {file_path}")
 
-        shutil.copyfile("./resources/mesh.feb", './resources/meshOriginal.feb')
-
-        
-
-        #Inserting boundary into mesh
-        source_file_path = boundaryPath 
-        target_file_path = meshPath 
-        temp_file_path = target_file_path + '.tmp'  
-
-        insert_tag = '</MeshDomains>'
-
-        with open(source_file_path, 'r') as source_file:
-            source_content = source_file.readlines()
-
-        with open(temp_file_path, 'w') as temp_file, open(target_file_path, 'r') as target_file:
-            for line in target_file:
-                temp_file.write(line)
-                if insert_tag in line:
-                    temp_file.writelines(source_content)
-
-        shutil.move(temp_file_path, target_file_path)
-
-
-        #Inserting boundary data into febio-config.xml
-        source_file_path = meshPath
-        target_file_path = file_path
-        temp_file_path = target_file_path + '.tmp'
-
-        insert_tag = '<MeshData>'
-
-        # Read the source file content, excluding the </MeshData> tag
-        with open(source_file_path, 'r') as source_file:
-            source_content = [line for line in source_file if '</MeshData>' not in line]
-        mesh_data_end_tag = '</MeshData>\n'  # Prepare the </MeshData> tag to be inserted later
-
-        # Process the target file and insert the source content and the </MeshData> tag appropriately
-        with open(temp_file_path, 'w') as temp_file, open(target_file_path, 'r') as target_file:
-            inserted = False
-            surface_data_closed = False
-            for line in target_file:
-                # Insert the source content before the insert_tag
-                if not inserted and insert_tag in line:
-                    print("THIS IS THE LINE", line)
-                    temp_file.writelines(source_content)
-                    inserted = True
-                # Check if the current line is the closing </SurfaceData> tag
-                if '</SurfaceData>' in line:
-                    surface_data_closed = True
-                temp_file.write(line)
-                # If we've inserted the source content and just wrote the closing </SurfaceData> tag,
-                # it's time to insert the </MeshData> tag
-                if inserted and surface_data_closed:
-                    surface_data_closed = False
-                    inserted = False  # Reset inserted if needed to handle multiple insertions
-
-        # Replace the original file with the modified content
-        shutil.move(temp_file_path, target_file_path)
-
-
-        shutil.move('./resources/meshOriginal.feb', './resources/mesh.feb')
-    
-
-
-
-        
         return file_path
-            
-
 

@@ -179,6 +179,7 @@ cd Fluid-Inner
                 if 'Allrun' in os.listdir(item_path):
                     run_script_lines.append(f"chmod 755 {item_path}/Allrun")
                     run_script_lines.append(f"chmod 755 {item_path}/Allclean")
+                    run_script_lines.append("kill_blastfoam")
                     run_script_lines.append(f"./{item_path}/Allclean")
                     run_script_lines.append(f"rm -f {item_path}/log.*")
                     run_script_lines.append(f"./{item_path}/Allrun")
