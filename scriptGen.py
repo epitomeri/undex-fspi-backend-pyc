@@ -4,8 +4,8 @@ import shutil
 class ScriptGen:
 
     @staticmethod
-    def gen_clean_script(projectid):
-        project_base_path = f'./projects/{projectid}'
+    def gen_clean_script(projectid, userid):
+        project_base_path = f'./projects/{userid}/{projectid}'
         clean_script = """#!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
@@ -43,10 +43,10 @@ echo "Cleaning complete!"
                 os.chmod(os.path.join(project_base_path, 'Allclean'), 0o777)
 
     @staticmethod
-    def gen_explosive_script(data, projectid):
+    def gen_explosive_script(data, projectid, userid):
 
         if(data["phaseProperties"]["explosive"]["active"] == True):
-            project_base_path = f'./projects/{projectid}'
+            project_base_path = f'./projects/{userid}/{projectid}'
             with open(os.path.join(project_base_path, f'run{data["participantName"]}'), 'w') as file:
                 explosive_script = """#!/bin/sh
 cd ${0%/*} || exit 1    # run from this directory
@@ -87,7 +87,7 @@ runParallel -o $(getApplication)
                 os.chmod(os.path.join(project_base_path, f'run{data["participantName"]}'), 0o777)
 
         elif(data["phaseProperties"]["explosive"]["active"] == False):
-            project_base_path = f'./projects/{projectid}'
+            project_base_path = f'./projects/{userid}/{projectid}'
             with open(os.path.join(project_base_path, f'run{data["participantName"]}'), 'w') as file:
                 explosive_script = """#!/bin/sh
 
@@ -114,9 +114,9 @@ runParallel -o $(getApplication)
 
         
     @staticmethod
-    def gen_solid_script(projectid):
-        project_base_path = f'./projects/{projectid}'
-        solid_base_path = f'./projects/{projectid}/Solid'
+    def gen_solid_script(projectid, userid):
+        project_base_path = f'./projects/{userid}/{projectid}'
+        solid_base_path = f'./projects/{userid}/{projectid}/Solid'
         with open(os.path.join(project_base_path, f'runSolid'), 'w') as file:
             solid_script = """#!/bin/bash
 echo "Preparing and running the Solid participant..."
@@ -144,8 +144,8 @@ rm *.xplt
 
 
     @staticmethod
-    def gen_fluid_script(projectid):
-        project_base_path = f'./projects/{projectid}'
+    def gen_fluid_script(projectid, userid):
+        project_base_path = f'./projects/{userid}/{projectid}'
         with open(os.path.join(project_base_path, f'runFluid-Outer'), 'w') as file:
             solid_script = """
 cd Fluid-Outer
@@ -168,8 +168,8 @@ cd Fluid-Inner
 
         
     @staticmethod
-    def gen_run_script(projectid):
-        project_base_path = f'./projects/{projectid}'
+    def gen_run_script(projectid, userid):
+        project_base_path = f'./projects/{userid}/{projectid}'
 
         run_script_lines = []
 
@@ -202,10 +202,10 @@ cd Fluid-Inner
 
 
     @staticmethod
-    def gen_validation(projectid):
-        project_base_path = f'./projects/{projectid}'
-        validation_path = f'./projects/{projectid}/validation'
-        validation_data_path = f'./projects/{projectid}/validation/validationData'
+    def gen_validation(projectid, userid):
+        project_base_path = f'./projects/{userid}/{projectid}'
+        validation_path = f'./projects/{userid}/{projectid}/validation'
+        validation_data_path = f'./projects/{userid}/{projectid}/validation/validationData'
         if not os.path.exists(validation_path):
             os.makedirs(validation_path)
         if not os.path.exists(validation_data_path):
@@ -253,7 +253,7 @@ fi
 """
             for folder in folderLists:
                 graphs_script += f"""
-{folder}Var="./projects/{projectid}/{folder}/postProcessing/displacementProbes/0/cellDisplacement" """
+{folder}Var="./projects/{userid}/{projectid}/{folder}/postProcessing/displacementProbes/0/cellDisplacement" """
 
             graphs_script += f"""
 \n
@@ -268,4 +268,4 @@ echo Done"""
             os.chmod(os.path.join(validation_path, f'createGraphs'), 0o777)
 
 
-        shutil.copyfile('./resources/experiment.txt', './projects/' + projectid + '/validation/validationData/experiment.txt')
+        shutil.copyfile('./resources/experiment.txt', './projects/' + userid + "/" + projectid + '/validation/validationData/experiment.txt')

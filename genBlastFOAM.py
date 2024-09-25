@@ -7,14 +7,15 @@ from blastFOAMGen.zero import ZeroGenerator
 from blastFOAMGen.system import SystemGenerator
 
 class BlastFoamGenerator:
-    def __init__(self, data, projectid):
+    def __init__(self, data, projectid, userid):
         self.projectid = projectid
+        self.userid = userid
         self.data = data
 
     def generate_constant(self):
         constant_generator = ConstantGenerator()
 
-        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
+        projects_dir = f'./projects/{self.userid}/{self.projectid}/{self.data["participantName"]}' 
         constant_dir = os.path.join(projects_dir, "constant")
 
         if not os.path.exists(constant_dir):
@@ -55,7 +56,7 @@ class BlastFoamGenerator:
 
     def generate_zero(self):
         zero_generator = ZeroGenerator()
-        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
+        projects_dir = f'./projects/{self.userid}/{self.projectid}/{self.data["participantName"]}' 
         zero_dir = os.path.join(projects_dir, "0")
 
         if not os.path.exists(zero_dir):
@@ -127,7 +128,7 @@ class BlastFoamGenerator:
                 
     def generate_system(self):
         system_generator = SystemGenerator()
-        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
+        projects_dir = f'./projects/{self.userid}/{self.projectid}/{self.data["participantName"]}' 
         system_dir = os.path.join(projects_dir, "system")
 
         if not os.path.exists(system_dir):
@@ -194,7 +195,7 @@ class BlastFoamGenerator:
 
 
     def generate_clean(self):
-        projects_dir = f'./projects/{self.projectid}/{self.data["participantName"]}' 
+        projects_dir = f'./project/{self.userid}s/{self.projectid}/{self.data["participantName"]}' 
         system_dir = os.path.join(projects_dir)
 
         if not os.path.exists(system_dir):
@@ -218,7 +219,7 @@ class BlastFoamGenerator:
 
         
     def generate_all(self): 
-        projects_dir = f'./projects/{self.projectid}' 
+        projects_dir = f'./projects/{self.userid}/{self.projectid}' 
         participant_dir = os.path.join(projects_dir, self.data["participantName"])
 
         if not os.path.exists(participant_dir):

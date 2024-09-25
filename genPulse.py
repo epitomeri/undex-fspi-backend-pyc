@@ -92,7 +92,7 @@ def HowTo_ExpandedRespiratory():
 HowTo_ExpandedRespiratory()
 """
 
-    def generate_py_script(self, data, projectid):
+    def generate_py_script(self, data, userid, projectid):
         # Define unit mappings for each request type
         request_units = {
             'HeartRate': 'FrequencyUnit.Per_min',
@@ -122,7 +122,7 @@ HowTo_ExpandedRespiratory()
                                           peakPressureData=data['pressureCriterion'])
 
         # Ensure the directory exists
-        directory_path = os.path.join(f'./projects/{projectid}/Physiology')
+        directory_path = os.path.join(f'./projects/{userid}/{projectid}/Physiology')
         os.makedirs(directory_path, exist_ok=True)
 
         # Write the script to a file
@@ -130,7 +130,7 @@ HowTo_ExpandedRespiratory()
         with open(script_path, 'w') as file:
             file.write(rendered_script)
 
-        return f'./projects/{projectid}/Physiology/runPulse.py'
+        return f'./projects/{userid}/{projectid}/Physiology/runPulse.py'
 
 # Example usage
 data = {

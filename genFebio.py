@@ -7,7 +7,7 @@ class FebioConfigGenerator():
     def __init__(self) -> None:
         pass
 
-    def generate_xml(self, data, projectid, meshPath, boundaryPath):
+    def generate_xml(self, data, userid, projectid, meshPath, boundaryPath):
 
         def safe_attrib(value):
             """Ensures that the attribute value is a string and not None."""
@@ -161,7 +161,7 @@ class FebioConfigGenerator():
                     shell_bottom = ET.SubElement(surface_load, "shell_bottom")
                     shell_bottom.text = safe_attrib(load['pressureTop'])
 
-        file_path = f'./projects/{projectid}/Solid/febio-case.feb'
+        file_path = f'./projects${userid}/{projectid}/Solid/febio-case.feb'
 
         print('file_path', file_path)
 

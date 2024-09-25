@@ -26,6 +26,7 @@ from genFebio import FebioConfigGenerator
 from genPulse import PulseConfigGenerator
 from scriptGen import ScriptGen
 
+import user
 from utils.formatXML import format_and_overwrite_xml_file
 from utils.fileParse import get_log_enabled, tail_file
 
@@ -68,11 +69,11 @@ def handle_options(response):
 
     return response
 
-def update_control_dict(projectid, blastfoam_folder):
+def update_control_dict(projectid, blastfoam_folder, userid):
     """
     Updates the controlDict file in the specified blastfoam folder to change stopAt to noWriteNow.
     """
-    control_dict_path = os.path.join('./projects', projectid, blastfoam_folder, 'system', 'controlDict')
+    control_dict_path = os.path.join('./projects', userid, 'projects', projectid, blastfoam_folder, 'system', 'controlDict')
 
     # Check if the file exists
     if not os.path.exists(control_dict_path):
@@ -96,8 +97,8 @@ def update_control_dict(projectid, blastfoam_folder):
     except Exception as e:
         return {"error": f"Failed to update controlDict: {str(e)}"}, 500
 
-@app.route("/update_control_dict/<projectid>/<blastfoam_folder>", methods=['GET', 'POST', 'OPTIONS'])
-def update_control_dict_endpoint(projectid, blastfoam_folder):
+@app.route("/update_control_dict/<projectid>/<userid>/<blastfoam_folder>", methods=['GET', 'POST', 'OPTIONS']) # type: ignore
+def update_control_dict_endpoint(projectid, userid, blastfoam_folder):
     """
     API endpoint to update the controlDict file's stopAt value in the specified blastfoam folder.
     """
@@ -106,7 +107,8 @@ def update_control_dict_endpoint(projectid, blastfoam_folder):
 
     if request.method == 'POST' or request.method == 'GET':
         # Call the function to update controlDict
-        result, status_code = update_control_dict(projectid, blastfoam_folder)
+        userid = process_userid_for_folder_name(userid)
+        result, status_code = update_control_dict(projectid, blastfoam_folder, userid)
         return jsonify(result), status_code
 
 def get_public_ip():
@@ -118,8 +120,8 @@ def get_public_ip():
     except requests.RequestException as e:
         return "Unable to retrieve public IP"
 
-@app.route("/pvserver/<projectid>", methods=['GET', 'POST', 'DELETE', 'OPTIONS'])
-def manage_pvserver(projectid):
+@app.route("/pvserver/<projectid>/<userid>", methods=['GET', 'POST', 'DELETE', 'OPTIONS']) # type: ignore
+def manage_pvserver(projectid, userid):
     global pvserver_process
 
     if request.method == 'OPTIONS':
@@ -130,7 +132,7 @@ def manage_pvserver(projectid):
         if pvserver_process and pvserver_process.poll() is None:
             return jsonify({"error": "PVServer is already running."}), 409
 
-        projects_dir = f'./projects/{projectid}'
+        projects_dir = f'./projects/{userid}/{projectid}'
 
         if not os.path.exists(projects_dir):
             return jsonify({"error": f"Project directory '{projectid}' does not exist."}), 404
@@ -182,17 +184,16 @@ def manage_pvserver(projectid):
             return jsonify({"error": "PVServer is not running."}), 400
 
 
-@app.route("/blastfoamgen/<projectid>", methods=['POST', 'OPTIONS'])  # type: ignore
-def handle_blastfoam(projectid):
+@app.route("/blastfoamgen/<projectid>/<userid>", methods=['POST', 'OPTIONS'])  # type: ignore
+def handle_blastfoam(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
         files = json.loads(request.form.get('files')) # type: ignore
         
-
-
-        projects_dir = f'./projects/{projectid}'
-
+        userid = process_userid_for_folder_name(userid)
+        projects_dir = f'./projects/{userid}/{projectid}'
+        
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
 
@@ -236,13 +237,14 @@ def handle_blastfoam(projectid):
 
         return send_file(zip_file_path, as_attachment=True)
 
-@app.route('/febiogen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
-def handle_febiogen(projectid):
+@app.route('/febiogen/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_febiogen(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
 
-        directory_path = f'./projects/{projectid}/Solid'
+        userid = process_userid_for_folder_name(userid)
+        directory_path = f'./projects/{userid}/{projectid}/Solid'
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
 
@@ -282,24 +284,25 @@ def handle_febiogen(projectid):
 
         generator = FebioConfigGenerator()
 
-        output_file_path = generator.generate_xml(data, projectid, mesh_path, boundary_path)
+        output_file_path = generator.generate_xml(data, userid, projectid, mesh_path, boundary_path)
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
 
-        ScriptGen.gen_clean_script(projectid)
-        ScriptGen.gen_solid_script(projectid)
+        ScriptGen.gen_clean_script(projectid, userid)
+        ScriptGen.gen_solid_script(projectid, userid)
 
         return send_from_directory(directory, filename, as_attachment=True) 
 
-@app.route('/pulsegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
-def handle_pulsegen(projectid):
+@app.route('/pulsegen/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_pulsegen(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
         data = request.get_json()
 
-        directory_path = f'./projects/{projectid}/Physiology'
+        userid = process_userid_for_folder_name(userid)
+        directory_path = f'./projects/{userid}/{projectid}/Physiology'
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
 
@@ -310,7 +313,7 @@ def handle_pulsegen(projectid):
 
         generator = PulseConfigGenerator()
 
-        output_file_path = generator.generate_py_script(data, projectid)
+        output_file_path = generator.generate_py_script(data, userid, projectid)
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
@@ -326,8 +329,8 @@ def handle_pulsegen(projectid):
 
         return send_from_directory(directory, filename, as_attachment=True)
 
-@app.route('/precicegen/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
-def handle_precice(projectid):
+@app.route('/precicegen/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_precice(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
@@ -335,7 +338,7 @@ def handle_precice(projectid):
 
         generator = PreCICEConfigGenerator()
 
-        output_file_path = generator.generate_xml(data, projectid)
+        output_file_path = generator.generate_xml(data, projectid, userid)
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
@@ -343,11 +346,11 @@ def handle_precice(projectid):
         format_and_overwrite_xml_file(output_file_path)
 
 
-        ScriptGen.gen_clean_script(projectid)
+        ScriptGen.gen_clean_script(projectid, userid)
         return send_from_directory(directory, filename, as_attachment=True)
     
-@app.route('/febio/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
-def handle_febio(projectid):
+@app.route('/febio/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_febio(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
@@ -360,7 +363,8 @@ def handle_febio(projectid):
             return 'No selected file', 400
 
         if file:
-            directory_path = f'./projects/{projectid}/Solid'
+            userid = process_userid_for_folder_name(userid)
+            directory_path = f'./projects/{userid}/{projectid}/Solid'
             if not os.path.exists(directory_path):
                 os.makedirs(directory_path)
                 
@@ -384,15 +388,16 @@ def handle_febio(projectid):
                 os.remove(file_path)
 
 
-            ScriptGen.gen_solid_script(projectid)
+            ScriptGen.gen_solid_script(projectid, userid)
             return 'File uploaded successfully', 200
     
-@app.route("/displacementgraph/<projectid>", methods=['GET', 'OPTIONS']) # type: ignore
-def handle_displacement_graph(projectid):
+@app.route("/displacementgraph/<projectid>/<userid>", methods=['GET', 'OPTIONS']) # type: ignore
+def handle_displacement_graph(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        project_base_path = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base_path = f'./projects/{userid}/{projectid}'
         validation_path = f'{project_base_path}/validation'
 
         if not os.path.exists(validation_path):
@@ -410,12 +415,13 @@ def handle_displacement_graph(projectid):
 
 
 
-@app.route('/graphfiles/<projectid>', methods=['GET', 'OPTIONS'])
-def handle_getgraphfiles(projectid):
+@app.route('/graphfiles/<projectid>/<userid>', methods=['GET', 'OPTIONS'])
+def handle_getgraphfiles(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        project_base = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base = f'./projects/{userid}/{projectid}'
         displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
         physiology_graph_path = f'{os.getenv("PULSE_INSTALL_DIR")}/pulseresults.csv'
 
@@ -448,15 +454,17 @@ def handle_getgraphfiles(projectid):
     return jsonify(graph_files), 200
 
 
-@app.route('/graphfile/<projectid>/', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_getgraphfile(projectid):
+@app.route('/graphfile/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getgraphfile(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         graphfilename = request.args.get('name') 
         if (".csv" not in graphfilename): # type: ignore
             return "Invalid file type", 400
-        file_path = f'./projects/{projectid}/{graphfilename}'
+
+        userid = process_userid_for_folder_name(userid)
+        file_path = f'./projects/{userid}/{projectid}/{graphfilename}'
         try:
             with open(file_path, mode='r', newline='') as file:
                 reader = csv.reader(file)
@@ -484,14 +492,15 @@ def handle_getgraphfile(projectid):
             return f"An error occurred: {str(e)}", 500
 
 
-@app.route('/raw/<projectid>/', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_getrawgraphfile(projectid):
+@app.route('/raw/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getrawgraphfile(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         graphfilename = request.args.get('name')
         addon = request.args.get('add')
-        file_path = f'./projects/{projectid}/{graphfilename}'
+        userid = process_userid_for_folder_name(userid)
+        file_path = f'./projects/{userid}/{projectid}/{graphfilename}'
         if (addon == "pulseInstall"):
             file_path = f'{os.getenv("PULSE_INSTALL_DIR")}/{graphfilename}'
         
@@ -517,12 +526,13 @@ def handle_getrawgraphfile(projectid):
             return f"An error occurred: {str(e)}", 500
 
 
-@app.route('/logfiles/<projectid>', methods=['GET']) # type: ignore
-def handle_getlogfiles(projectid):
+@app.route('/logfiles/<projectid>/<userid>', methods=['GET']) # type: ignore
+def handle_getlogfiles(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        project_base = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base = f'./projects/{userid}/{projectid}'
 
         if not os.path.exists(project_base):
             os.makedirs(project_base)
@@ -561,25 +571,27 @@ def handle_getlogfiles(projectid):
 
 
 
-@app.route('/logfile/<projectid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_getlogfile(projectid, casename, logfilename):
+@app.route('/logfile/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_getlogfile(projectid, userid, casename, logfilename):
 
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        file_path = f'./projects/{projectid}/{casename}/{logfilename}'
+        userid = process_userid_for_folder_name(userid)
+        file_path = f'./projects/{userid}/{projectid}/{casename}/{logfilename}'
 
         print("THIS IS THE FILEPATH: ", file_path)
 
         return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
         
         
-@app.route('/download/<projectid>/', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_download(projectid):
+@app.route('/download/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_download(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        project_base = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base = f'./projects/{userid}/{projectid}'
 
 
         args = request.args
@@ -593,20 +605,19 @@ def handle_download(projectid):
         return send_from_directory(project_base, filename, as_attachment=True)
 
 
-@app.route('/projects/<projectid>', methods=['POST', 'OPTIONS']) # type: ignore
-def handle_patch_project(projectid):
+@app.route('/projects/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_patch_project(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
         data = request.get_json()
-
-
-        project_base = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base = f'./projects/{userid}/{projectid}'
         if not os.path.exists(project_base):
             os.makedirs(project_base)
 
         if 'projectName' in data:
-            os.rename(project_base, f'./projects/{data["projectName"]}')
+            os.rename(project_base, f'./projects/{userid}/{data["projectName"]}')
 
         return {"message": 'Project updated'}, 200
 
@@ -622,12 +633,13 @@ def delete_directory(path):
     os.rmdir(path)
 
 
-@app.route('/deleteproject/<projectid>', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_delete_project(projectid):
+@app.route('/deleteproject/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_delete_project(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        project_base = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base = f'./projects/{userid}/{projectid}'
         if os.path.exists(project_base):
             delete_directory(project_base)
             return {"message": 'Project deleted'}, 200
@@ -635,17 +647,18 @@ def handle_delete_project(projectid):
             return {"message": 'Project not found'}, 404
 
 
-@app.route('/run/<projectid>', methods=['GET'])  # type: ignore
-def handle_run(projectid):
+@app.route('/run/<projectid>/<userid>', methods=['GET'])  # type: ignore
+def handle_run(projectid, userid):
     if request.method == 'GET':
         print("running" + projectid)
-        project_base_path = f'./projects/{projectid}'
-        ScriptGen.gen_run_script(projectid)
+        userid = process_userid_for_folder_name(userid)
+        project_base_path = f'./projects/{userid}/{projectid}'
+        ScriptGen.gen_run_script(projectid, userid)
 
         # Check for the existence of a directory starting with 'Solid'
         solid_dir = next((d for d in os.listdir(project_base_path) if os.path.isdir(os.path.join(project_base_path, d)) and d.startswith('Solid')), None)
         if solid_dir:
-            ScriptGen.gen_solid_script(projectid)
+            ScriptGen.gen_solid_script(projectid, userid)
 
         subprocess.run(['bash', os.path.join(project_base_path, 'run.sh')])
 
@@ -729,12 +742,13 @@ def parse_other_file(filename, content):
     
     return result
 
-@app.route("/blastfoam/data/<projectid>/<caseName>", methods=['GET', 'OPTIONS'])  # type: ignore
-def fetch_blastfoam_data(projectid, caseName):
+@app.route("/blastfoam/data/<projectid>/<userid>/<caseName>", methods=['GET', 'OPTIONS'])  # type: ignore
+def fetch_blastfoam_data(projectid, userid, caseName):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        project_base_path = f'./projects/{projectid}'
+        userid = process_userid_for_folder_name(userid)
+        project_base_path = f'./projects/{userid}/{projectid}'
         project_base = f'{project_base_path}/{caseName}/postProcessing/probes/0'
 
         data_files = ['cellDisplacement', 'p', 'U', 'rho']
@@ -834,5 +848,8 @@ def _build_cors_preflight_response():
     response.headers.add('Access-Control-Allow-Methods', "*")
     return response
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=4000, debug=True)
+def process_userid_for_folder_name(userid: str):
+    return userid
+
+if __name__ == '__main__':  
+    app.run(host='0.0.0.0', port=4009, debug=True, use_reloader=False)

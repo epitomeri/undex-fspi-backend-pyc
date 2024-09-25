@@ -55,9 +55,9 @@ class PreCICEConfigGenerator:
                     except Exception as e:
                         print(f"An error occurred while processing {file_path}: {e}")
 
-    def generate_xml(self, data, projectid):
+    def generate_xml(self, data, projectid, userid):
 
-        projects_dir = f'./projects/{projectid}' 
+        projects_dir = f'./projects/{userid}/{projectid}' 
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
 
@@ -294,7 +294,7 @@ class PreCICEConfigGenerator:
         tree = ET.ElementTree(start)
 
         # Write the tree to a file
-        tree.write(f'./projects/{projectid}/precice-config.xml', xml_declaration=True, encoding='utf-8')
+        tree.write(f'./projects/{userid}/{projectid}/precice-config.xml', xml_declaration=True, encoding='utf-8')
 
-        return f'./projects/{projectid}/precice-config.xml'
+        return f'./projects/{userid}/{projectid}/precice-config.xml'
     
