@@ -73,7 +73,7 @@ def update_control_dict(projectid, blastfoam_folder, userid):
     """
     Updates the controlDict file in the specified blastfoam folder to change stopAt to noWriteNow.
     """
-    control_dict_path = os.path.join('./projects', userid, 'projects', projectid, blastfoam_folder, 'system', 'controlDict')
+    control_dict_path = os.path.join('./projects', userid, projectid, blastfoam_folder, 'system', 'controlDict')
 
     # Check if the file exists
     if not os.path.exists(control_dict_path):
@@ -413,8 +413,6 @@ def handle_displacement_graph(projectid, userid):
 
         return send_file(displacement_graph_path, as_attachment=True)
 
-
-
 @app.route('/graphfiles/<projectid>/<userid>', methods=['GET', 'OPTIONS'])
 def handle_getgraphfiles(projectid, userid):
     if request.method == 'OPTIONS':
@@ -650,7 +648,7 @@ def handle_delete_project(projectid, userid):
 @app.route('/run/<projectid>/<userid>', methods=['GET'])  # type: ignore
 def handle_run(projectid, userid):
     if request.method == 'GET':
-        print("running" + projectid)
+        print("running", projectid)
         userid = process_userid_for_folder_name(userid)
         project_base_path = f'./projects/{userid}/{projectid}'
         ScriptGen.gen_run_script(projectid, userid)
