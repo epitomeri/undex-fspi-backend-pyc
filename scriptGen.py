@@ -4,8 +4,8 @@ import shutil
 class ScriptGen:
 
     @staticmethod
-    def gen_clean_script(projectid, userid):
-        project_base_path = f'./projects/{userid}/{projectid}'
+    def gen_clean_script(projectid, userid, caseid):
+        project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
         clean_script = """#!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
@@ -114,9 +114,9 @@ runParallel -o $(getApplication)
 
         
     @staticmethod
-    def gen_solid_script(projectid, userid):
-        project_base_path = f'./projects/{userid}/{projectid}'
-        solid_base_path = f'./projects/{userid}/{projectid}/Solid'
+    def gen_solid_script(projectid, userid, caseid):
+        project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
+        solid_base_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid'
         with open(os.path.join(project_base_path, f'runSolid'), 'w') as file:
             solid_script = """#!/bin/bash
 echo "Preparing and running the Solid participant..."
@@ -168,8 +168,8 @@ cd Fluid-Inner
 
         
     @staticmethod
-    def gen_run_script(projectid, userid):
-        project_base_path = f'./projects/{userid}/{projectid}'
+    def gen_run_script(caseid, projectid, userid):
+        project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
 
         run_script_lines = []
 

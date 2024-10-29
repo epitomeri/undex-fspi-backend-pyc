@@ -3,11 +3,43 @@ import xml.dom.minidom
 import re
 import os
 
+def dict_to_xml(tag, d):
+    """Convert a dictionary to an XML Element."""
+    elem = ET.Element(tag)
+    for key, val in d.items():
+        if key == "#value":
+            # If the key is '#value', set the text content of the current element
+            elem.text = str(val)
+        elif isinstance(val, dict):
+            # Recursive call for sub-dictionaries
+            child = dict_to_xml(key, val)
+            elem.append(child)
+        elif isinstance(val, list):
+            # Handle lists by creating multiple child elements with the same tag
+            for sub_val in val:
+                child = dict_to_xml(key, sub_val)
+                elem.append(child)
+        else:
+            # Handle attributes if the key starts with "@", otherwise treat it as a child element
+            if key.startswith('@'):
+                elem.set(key[1:], str(val))  # Attribute
+            else:
+                child = ET.Element(key)  # Regular child element
+                child.text = str(val)
+                elem.append(child)
+    return elem
+
+def json_to_xml_string(json_obj, root_tag="root"):
+    """Convert JSON object to an XML string."""
+    root = dict_to_xml(root_tag, json_obj)
+    # return ET.tostring(root, encoding="unicode")
+    return root
+
 class FebioConfigGenerator():
     def __init__(self) -> None:
         pass
 
-    def generate_xml(self, data, userid, projectid, meshPath, boundaryPath):
+    def generate_xml(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
 
         def safe_attrib(value):
             """Ensures that the attribute value is a string and not None."""
@@ -36,16 +68,24 @@ class FebioConfigGenerator():
         xml_str = ET.tostring(febio_spec, encoding='utf-8').decode('utf-8')
 
         # Read the content of mesh.feb
-        with open(meshPath, 'r') as mesh_file:
-            mesh_content = mesh_file.read()
+        if meshPath:
+            with open(meshPath, 'r') as mesh_file:
+                mesh_content = mesh_file.read()
+        else:
+            print("else")
+            mesh_content = json_to_xml_string(meshValue)
 
         # Insert the content of mesh.feb right after the </Material> tag
         insertion_point = xml_str.find('</Material>')
+        print(mesh_content)
         xml_str = xml_str[:insertion_point + len('</Material>')] + '\n' + mesh_content + xml_str[insertion_point + len('</Material>'):]
 
         # Read the content of bcfile.txt (boundary file)
-        with open(boundaryPath, 'r') as boundary_file:
-            boundary_content = boundary_file.read()
+        if boundaryPath:
+            with open(boundaryPath, 'r') as boundary_file:
+                boundary_content = boundary_file.read()
+        else:
+            boundary_content = json_to_xml_string(boundaryValue)
 
         # Insert the content of bcfile.txt right after the mesh content
         insertion_point = xml_str.find('</Mesh>')
@@ -161,7 +201,7 @@ class FebioConfigGenerator():
                     shell_bottom = ET.SubElement(surface_load, "shell_bottom")
                     shell_bottom.text = safe_attrib(load['pressureTop'])
 
-        file_path = f'./projects${userid}/{projectid}/Solid/febio-case.feb'
+        file_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid/febio-case.feb'
 
         print('file_path', file_path)
 
@@ -176,3 +216,21 @@ class FebioConfigGenerator():
 
         return file_path
 
+    def generate_xml_(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
+
+        # TODO: Change values in template to data values.
+        
+        file_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid/febio-case.feb'
+
+        print('file_path', file_path)
+
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        # Write the final XML tree to file
+        tree = ET.ElementTree(json_to_xml_string(data["template"]["template"]))
+        tree.write(file_path, encoding="utf-8", xml_declaration=True)
+
+        print(f"File written: {file_path}")
+
+        return file_path
