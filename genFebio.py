@@ -3,6 +3,8 @@ import xml.dom.minidom
 import re
 import os
 
+from streamlit import json
+
 def dict_to_xml(tag, d):
     """Convert a dictionary to an XML Element."""
     elem = ET.Element(tag)
@@ -35,11 +37,112 @@ def json_to_xml_string(json_obj, root_tag="root"):
     # return ET.tostring(root, encoding="unicode")
     return root
 
+def json_to_febio_template(febio_form, xml_object):
+
+    xml_object["MeshData"]["SurfaceData"]["@name"] = febio_form["dataMapped"]["type"]
+
+    for i in range(len(xml_object["Material"]["material"])):
+        if i >= len(febio_form["material"]["materials"]):
+            continue
+        material = febio_form["material"]["materials"][i]
+        xml_object["Material"]["material"][i].update({
+            "@name": material["name"],
+            "@type": material["type"],
+            "density": {
+                "#value": material["density"]
+            },
+            "v": {
+                "#value": material["poisson"]
+            },
+            "E": {
+                "#value": material["young"]
+            }
+        })
+
+    # Convert load controllers back to XML format
+    for i in range(len(xml_object["LoadData"]["load_controller"])):
+        if i >= len(febio_form["loadController"]["loadControllers"]):
+            continue
+        load_controller = febio_form["loadController"]["loadControllers"][i]
+        xml_object["LoadData"]["load_controller"][i].update({
+            "@type": load_controller["type"],
+            "interpolate": {
+                "#value": load_controller["interpolation"]
+            },
+            "points": {
+                "pt": [
+                    {"#value": load_controller["firstPoint"]},
+                    {"#value": load_controller["secondPoint"]}
+                ]
+            }
+        })
+
+    # Convert steps back to XML format
+    for i in range(len(xml_object["Step"]["step"])):
+        if i >= len(febio_form["step"]["steps"]):
+            continue
+        step = febio_form["step"]["steps"][i]
+        step_data = {
+            "@name": step["name"],
+            "Control": {
+                "solver": {
+                    "@type": step["moduleType"],
+                    "mass_lumping": {
+                        "#value": step.get("massLumping", "")
+                    },
+                    "dyn_damping": {
+                        "#value": step.get("dynamicLumping", "")
+                    }
+                },
+                "analysis": {
+                    "#value": step["analysisType"]
+                },
+                "time_steps": {
+                    "#value": step["timeSteps"]
+                },
+                "step_size": {
+                    "#value": step["stepSize"]
+                },
+                "plot_stride": {
+                    "#value": step["plotStride"]
+                }
+            },
+            "Loads": {
+                "surface_load": []
+            }
+        }
+
+        # Convert loads back to XML format
+        for load in step["loads"]:
+            surface_load = {
+                "@name": load["pressureLabel"],
+                "pressure": {
+                    "@lc": load["loadController"],
+                    "#value": load["pressure"]
+                },
+                "linear": {
+                    "#value": load["linearParam"]
+                },
+                "symmetric_stiffness": {
+                    "#value": load["matrix"]
+                },
+                "shell_bottom": {
+                    "#value": load["pressureTop"]
+                },
+                "@surface": load["surfaceName"],
+                "@type": load["loadType"]
+            }
+            step_data["Loads"]["surface_load"].append(surface_load)
+
+        xml_object["Step"]["step"][i].update(step_data)
+
+    return xml_object
+
 class FebioConfigGenerator():
     def __init__(self) -> None:
         pass
 
-    def generate_xml(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
+    def generate_xml_(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
 
         def safe_attrib(value):
             """Ensures that the attribute value is a string and not None."""
@@ -216,9 +319,9 @@ class FebioConfigGenerator():
 
         return file_path
 
-    def generate_xml_(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
-
-        # TODO: Change values in template to data values.
+    def generate_xml(self, data, userid, projectid, caseid):
+        
+        data["template"]["template"] = json_to_febio_template(data, data["template"]["template"])
         
         file_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid/febio-case.feb'
 

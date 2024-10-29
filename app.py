@@ -282,13 +282,12 @@ def handle_febiogen(caseid, projectid, userid):
         data = json.loads(solver_case_json) # type: ignore
 
         generator = FebioConfigGenerator()
-        # output_file_path = generator.generate_xml(data, userid, projectid, caseid, mesh_path, boundary_path, data["mesh"]["value"], data["boundaryConditions"]["value"])
-        output_file_path = generator.generate_xml_(data, userid, projectid, caseid, mesh_path, boundary_path, data["mesh"]["value"], data["boundaryConditions"]["value"])
+        output_file_path = generator.generate_xml(data, userid, projectid, caseid)
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
 
-        ScriptGen.gen_clean_script(projectid, userid, caseid)
+        ScriptGen.gen_clean_script(projectid, userid, f"{caseid}/solid-FEBio")
         ScriptGen.gen_solid_script(projectid, userid, caseid)
         print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True) 
@@ -325,7 +324,6 @@ def handle_pulsegen(caseid, projectid, userid):
                     os.chmod(os.path.join(item_path, 'Allclean'), 0o755)
                     subprocess.run(['bash', os.path.join(item_path, 'Allclean')])
 
-
         return send_from_directory(directory, filename, as_attachment=True)
 
 @app.route('/precicegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
@@ -345,7 +343,8 @@ def handle_precice(caseid, projectid, userid):
         format_and_overwrite_xml_file(output_file_path)
 
 
-        ScriptGen.gen_clean_script(projectid, userid, caseid)
+        ScriptGen.gen_clean_script(projectid, userid, f"{caseid}/coupling-preCICE")
+        print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True)
     
 @app.route('/febio/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
@@ -506,7 +505,7 @@ def handle_getrawgraphfile(caseid, projectid, userid):
                 for i, line in enumerate(reader):
 
                     if i % 50 == 0:
-                        print(i, line[0])
+                        # print(i, line[0])
                         #print(line)
                         selected_lines.append(line)
                     if len(selected_lines) >= 20:

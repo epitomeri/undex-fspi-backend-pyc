@@ -58,6 +58,7 @@ class PreCICEConfigGenerator:
     def generate_xml(self, data, projectid, userid, caseid):
 
         projects_dir = f'./projects/{userid}/{projectid}/{caseid}/coupling-preCICE' 
+        
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
 

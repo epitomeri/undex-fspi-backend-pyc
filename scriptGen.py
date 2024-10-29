@@ -115,14 +115,14 @@ runParallel -o $(getApplication)
         
     @staticmethod
     def gen_solid_script(projectid, userid, caseid):
-        project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
+        project_base_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/'
         solid_base_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid'
         with open(os.path.join(project_base_path, f'runSolid'), 'w') as file:
             solid_script = """#!/bin/bash
 echo "Preparing and running the Solid participant..."
 cd Solid
 ./Allclean
-febio-precice febio-case.feb ../precice-config.xml > febio-precice.log 
+febio-precice febio-case.feb ../coupling-preCICE/precice-config.xml > febio-precice.log 
 """
     
             file.write(solid_script)
@@ -144,7 +144,7 @@ rm *.xplt
 
 
     @staticmethod
-    def gen_fluid_script(projectid, userid):
+    def gen_fluid_script(projectid, userid, caseid):
         project_base_path = f'./projects/{userid}/{projectid}'
         with open(os.path.join(project_base_path, f'runFluid-Outer'), 'w') as file:
             solid_script = """
@@ -195,7 +195,7 @@ cd Fluid-Inner
                         print("EnvIronment variable PULSE_INSTALL_DIR is not set.")
 
         run_script = "\n".join(run_script_lines)
-
+        print("run_script", run_script)
         with open(os.path.join(project_base_path, 'run.sh'), 'w') as file:
             file.write(run_script)
             os.chmod(os.path.join(project_base_path, 'run.sh'), 0o777)
