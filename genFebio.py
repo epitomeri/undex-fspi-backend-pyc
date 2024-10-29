@@ -3,8 +3,6 @@ import xml.dom.minidom
 import re
 import os
 
-from streamlit import json
-
 def dict_to_xml(tag, d):
     """Convert a dictionary to an XML Element."""
     elem = ET.Element(tag)
