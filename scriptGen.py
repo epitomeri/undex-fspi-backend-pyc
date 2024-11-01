@@ -170,19 +170,21 @@ cd Fluid-Inner
     @staticmethod
     def gen_run_script(caseid, projectid, userid):
         project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
-
         run_script_lines = []
 
         for item in os.listdir(project_base_path):
             item_path = os.path.join(project_base_path, item)
             if os.path.isdir(item_path):
-                if 'Allrun' in os.listdir(item_path):
-                    run_script_lines.append(f"chmod 755 {item_path}/Allrun")
-                    run_script_lines.append(f"chmod 755 {item_path}/Allclean")
-                    run_script_lines.append("kill_blastfoam")
-                    run_script_lines.append(f"./{item_path}/Allclean")
-                    run_script_lines.append(f"rm -f {item_path}/log.*")
-                    run_script_lines.append(f"./{item_path}/Allrun")
+                if(item == "fluid-blastFOAM"):
+                    for case_item in os.listdir(item_path):
+                        case_item_path = os.path.join(item_path, case_item)
+                        if 'Allrun' in os.listdir(case_item_path):
+                            run_script_lines.append(f"chmod 755 {case_item_path}/Allrun")
+                            run_script_lines.append(f"chmod 755 {case_item_path}/Allclean")
+                            run_script_lines.append("kill_blastfoam")
+                            run_script_lines.append(f"./{case_item_path}/Allclean")
+                            run_script_lines.append(f"rm -f {case_item_path}/log.*")
+                            run_script_lines.append(f"./{case_item_path}/Allrun")
                 if 'runSolid' in os.listdir(item_path):
                     run_script_lines.append(f"chmod 755 {item_path}/runSolid")
                     run_script_lines.append(f"./{item_path}/runSolid")
@@ -195,7 +197,6 @@ cd Fluid-Inner
                         print("EnvIronment variable PULSE_INSTALL_DIR is not set.")
 
         run_script = "\n".join(run_script_lines)
-        print("run_script", run_script)
         with open(os.path.join(project_base_path, 'run.sh'), 'w') as file:
             file.write(run_script)
             os.chmod(os.path.join(project_base_path, 'run.sh'), 0o777)

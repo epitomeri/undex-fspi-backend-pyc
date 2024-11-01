@@ -304,16 +304,12 @@ class FebioConfigGenerator():
 
         file_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid/febio-case.feb'
 
-        print('file_path', file_path)
-
         # Ensure the directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Write the final XML tree to file
         tree = ET.ElementTree(febio_spec)
         tree.write(file_path, encoding="utf-8", xml_declaration=True)
-
-        print(f"File written: {file_path}")
 
         return file_path
 
@@ -323,15 +319,11 @@ class FebioConfigGenerator():
         
         file_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid/febio-case.feb'
 
-        print('file_path', file_path)
-
         # Ensure the directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Write the final XML tree to file
         tree = ET.ElementTree(json_to_xml_string(data["template"]["template"]))
         tree.write(file_path, encoding="utf-8", xml_declaration=True)
-
-        print(f"File written: {file_path}")
 
         return file_path
