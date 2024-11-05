@@ -551,13 +551,13 @@ def handle_getlogfiles(caseid, projectid, userid):
                         item_path = os.path.join(case_path, item)
                         
                         if raw_case == 'fluid-blastFOAM' and os.path.isdir(item_path):
-                            log_files[f"{raw_case}/{item}"] = []
+                            log_files[f"{raw_case}:{item}"] = []
                             for blast_case in os.listdir(item_path): # logs in blast cases level.
                                 blast_case_path = os.path.join(item_path, blast_case)
                                 if os.path.isfile(blast_case_path) and (blast_case.endswith('.log') or blast_case.startswith('log.')):
-                                    log_files[f"{raw_case}/{item}"].append(blast_case)
-                            if len(log_files[f"{raw_case}/{item}"]) == 0:
-                                log_files.pop(f"{raw_case}/{item}")
+                                    log_files[f"{raw_case}:{item}"].append(blast_case)
+                            if len(log_files[f"{raw_case}:{item}"]) == 0:
+                                log_files.pop(f"{raw_case}:{item}")
                         
                         elif os.path.isfile(item_path) and (item.endswith('.log') or item.startswith('log.')):
                             log_files[raw_case].append(item)
@@ -574,12 +574,14 @@ def handle_getlogfiles(caseid, projectid, userid):
         return jsonify(log_files), 200
 
 @app.route('/logfile/<caseid>/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
-def handle_getlogfile(caseid, projectid, userid, casename, logfilename):
+def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
 
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
         userid = process_userid_for_folder_name(userid)
+        if ":" in casename:
+            casename = casename.replace(":", "/")
         file_path = f'./projects/{userid}/{projectid}/{caseid}/{casename}/{logfilename}'
 
         print("THIS IS THE FILEPATH: ", file_path)
