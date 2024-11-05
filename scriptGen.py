@@ -118,8 +118,9 @@ runParallel -o $(getApplication)
         project_base_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/'
         solid_base_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid'
         with open(os.path.join(project_base_path, f'runSolid'), 'w') as file:
-            solid_script = """#!/bin/bash
+            solid_script = f"""#!/bin/bash
 echo "Preparing and running the Solid participant..."
+cd {project_base_path}
 cd Solid
 ./Allclean
 febio-precice febio-case.feb ../coupling-preCICE/precice-config.xml > febio-precice.log 
@@ -145,7 +146,7 @@ rm *.xplt
 
     @staticmethod
     def gen_fluid_script(projectid, userid, caseid):
-        project_base_path = f'./projects/{userid}/{projectid}'
+        project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
         with open(os.path.join(project_base_path, f'runFluid-Outer'), 'w') as file:
             solid_script = """
 cd Fluid-Outer
@@ -181,7 +182,7 @@ cd Fluid-Inner
                         if 'Allrun' in os.listdir(case_item_path):
                             run_script_lines.append(f"chmod 755 {case_item_path}/Allrun")
                             run_script_lines.append(f"chmod 755 {case_item_path}/Allclean")
-                            run_script_lines.append("kill_blastfoam")
+                            run_script_lines.append("kill_blastfoam.sh")
                             run_script_lines.append(f"./{case_item_path}/Allclean")
                             run_script_lines.append(f"rm -f {case_item_path}/log.*")
                             run_script_lines.append(f"./{case_item_path}/Allrun")

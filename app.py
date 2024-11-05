@@ -572,8 +572,18 @@ def handle_getlogfiles(caseid, projectid, userid):
                     if len(log_files[raw_case]) == 0:
                         log_files.pop(raw_case)
 
+        # Set the root directory to search
+        log_files_ = find_log_files(project_base)
+        print(log_files_)
         return jsonify(log_files), 200
 
+def find_log_files(root_dir):
+    log_files = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename.endswith(".log") or filename.startswith("log."):
+                log_files.append(os.path.join(dirpath, filename))
+    return log_files
 @app.route('/logfile/<caseid>/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
 
