@@ -559,7 +559,7 @@ def handle_getlogfiles(caseid, projectid, userid):
                                 blast_case_path = os.path.join(item_path, blast_case)
                                 print(f"\t - {blast_case}")
                                 if os.path.isfile(blast_case_path) and (blast_case.endswith('.log') or blast_case.startswith('log.')):
-                                    log_files[f"{raw_case}-{blast_case}"].append(blast_case)
+                                    log_files[f"{raw_case}-{item}"].append(blast_case)
                             if len(log_files[f"{raw_case}-{item}"]) == 0:
                                 log_files.pop(f"{raw_case}-{item}")
                         
