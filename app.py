@@ -542,20 +542,24 @@ def handle_getlogfiles(caseid, projectid, userid):
             log_file_name = lfm if lfm is not None else log_file_name
 
         for raw_case in os.listdir(project_base): # fluid-blastFPAM level
+            print(raw_case)
             if raw_case != "precice-run":
                 case_path = os.path.join(project_base, raw_case)
                 if os.path.isdir(case_path) and raw_case != 'validation':
                     log_files[raw_case] = []
 
                     for item in os.listdir(case_path): # 0-case-1 level for fluid and log level for else
+                        print("\t", item)
                         item_path = os.path.join(case_path, item)
                         
                         if raw_case == 'fluid-blastFOAM' and os.path.isdir(item_path):
                             log_files[f"{raw_case}:{item}"] = []
                             for blast_case in os.listdir(item_path): # logs in blast cases level.
+                                print("\t\t", blast_case)
                                 blast_case_path = os.path.join(item_path, blast_case)
                                 if os.path.isfile(blast_case_path) and (blast_case.endswith('.log') or blast_case.startswith('log.')):
                                     log_files[f"{raw_case}:{item}"].append(blast_case)
+                                    print("\b |")
                             if len(log_files[f"{raw_case}:{item}"]) == 0:
                                 log_files.pop(f"{raw_case}:{item}")
                         
