@@ -6,7 +6,12 @@ import os
 def dict_to_xml(tag, d):
     """Convert a dictionary to an XML Element."""
     elem = ET.Element(tag)
-    for key, val in d.items():
+    if tag == "febio_spec":
+        keys = ["@version", "Module",  "Globals", "Material", "Mesh", "MeshDomains", "MeshData", "Boundary", "Rigid", "Loads", "Step", "LoadData", "Output"]
+    else:
+        keys = d.keys()
+    for key in keys:
+        val = d[key]
         if key == "#value":
             # If the key is '#value', set the text content of the current element
             elem.text = str(val)
