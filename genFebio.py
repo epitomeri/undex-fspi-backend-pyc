@@ -174,7 +174,7 @@ class FebioConfigGenerator():
                 mesh_content = mesh_file.read()
         else:
             print("else")
-            mesh_content = json_to_xml_string(meshValue)
+            mesh_content = json_to_xml_string(meshValue, "Mesh")
 
         # Insert the content of mesh.feb right after the </Material> tag
         insertion_point = xml_str.find('</Material>')
@@ -186,7 +186,7 @@ class FebioConfigGenerator():
             with open(boundaryPath, 'r') as boundary_file:
                 boundary_content = boundary_file.read()
         else:
-            boundary_content = json_to_xml_string(boundaryValue)
+            boundary_content = json_to_xml_string(boundaryValue, "Boundary")
 
         # Insert the content of bcfile.txt right after the mesh content
         insertion_point = xml_str.find('</Mesh>')
@@ -323,7 +323,7 @@ class FebioConfigGenerator():
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Write the final XML tree to file
-        tree = ET.ElementTree(json_to_xml_string(data["template"]["template"]))
+        tree = ET.ElementTree(json_to_xml_string(data["template"]["template"], "febio_spec"))
         tree.write(file_path, encoding="utf-8", xml_declaration=True)
 
         return file_path

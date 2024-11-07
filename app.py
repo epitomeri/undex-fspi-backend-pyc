@@ -649,8 +649,8 @@ def handle_patch_simulation(caseid, projectid, userid):
         if not os.path.exists(simulation_base):
             os.makedirs(simulation_base)
 
-        if 'caseName' in data:
-            os.rename(simulation_base, f'./projects/{userid}/{projectid}/{data["caseName"]}')
+        if 'simulationName' in data:
+            os.rename(simulation_base, f'./projects/{userid}/{projectid}/{data["simulationName"]}')
 
         return {"message": 'Simulation Case Folder name updated'}, 200
 
