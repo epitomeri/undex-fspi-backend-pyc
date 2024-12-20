@@ -26,7 +26,6 @@ from genFebio import FebioConfigGenerator
 from genPulse import PulseConfigGenerator
 from scriptGen import ScriptGen
 
-import user
 from utils.formatXML import format_and_overwrite_xml_file
 from utils.fileParse import get_log_enabled, tail_file
 
