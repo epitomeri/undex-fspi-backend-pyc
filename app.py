@@ -581,6 +581,11 @@ def find_log_files(root_dir):
         # Find .log files in the current directory
         current_log_files = [f for f in filenames if f.endswith(".log") or f.startswith("log.")]
         if current_log_files:
+            # Sort files by modification time (latest first)
+            current_log_files.sort(
+                key=lambda f: os.path.getmtime(os.path.join(dirpath, f)),
+                reverse=True
+            )
             # Remove root_dir from path and replace '/' with ':'
             relative_path = dirpath.replace(root_dir, "").replace(os.sep, ":").lstrip(":")
             log_files[relative_path] = current_log_files
@@ -909,4 +914,4 @@ def process_userid_for_folder_name(userid: str):
     return userid
 
 if __name__ == '__main__':  
-    app.run(host='0.0.0.0', port=4009, debug=True, use_reloader = False)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT')), debug=True, use_reloader = False)
