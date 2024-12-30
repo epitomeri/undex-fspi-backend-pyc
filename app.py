@@ -724,7 +724,23 @@ def handle_run(caseid, projectid, userid):
         if solid_dir:
             ScriptGen.gen_solid_script(caseid, projectid, userid)
 
-        subprocess.run(['bash', os.path.join(project_base_path, 'run.sh')])
+        try:
+            result = subprocess.run(
+                ['bash', os.path.join(project_base_path, 'run.sh')],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,  # Ensures output is captured as a string
+                check=True  # Raises an exception if the command fails
+            )
+            print("STDOUT:")
+            print(result.stdout)  # Logs the standard output
+            print("STDERR:")
+            print(result.stderr)  # Logs the standard error (if any)
+        except subprocess.CalledProcessError as e:
+            print("An error occurred while running the script.")
+            print("Return Code:", e.returncode)
+            print("STDOUT:", e.stdout)
+            print("STDERR:", e.stderr)
 
         return 'Simulation started', 200
 
