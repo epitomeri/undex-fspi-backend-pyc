@@ -53,14 +53,16 @@ app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASSWORD')
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
+INSTANCE_NAME = os.getenv('INSTANCE_NAME')
 
+backend_routes = Blueprint('user', __name__, url_prefix=INSTANCE_NAME)
 
-@app.before_request
+@backend_routes.before_request
 def before_request():
     if not os.path.exists('./projects'):
         os.makedirs('./projects')
 
-@app.after_request
+@backend_routes.after_request
 def handle_options(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
@@ -96,7 +98,7 @@ def update_control_dict(caseid, projectid, blastfoam_folder, userid):
     except Exception as e:
         return {"error": f"Failed to update controlDict: {str(e)}"}, 500
 
-@app.route("/update_control_dict/<caseid>/<projectid>/<userid>/<blastfoam_folder>", methods=['GET', 'POST', 'OPTIONS']) # type: ignore
+@backend_routes.route("/update_control_dict/<caseid>/<projectid>/<userid>/<blastfoam_folder>", methods=['GET', 'POST', 'OPTIONS']) # type: ignore
 def update_control_dict_endpoint(caseid, projectid, userid, blastfoam_folder):
     """
     API endpoint to update the controlDict file's stopAt value in the specified blastfoam folder.
@@ -119,7 +121,7 @@ def get_public_ip():
     except requests.RequestException as e:
         return "Unable to retrieve public IP"
 
-@app.route("/pvserver/<caseid>/<projectid>/<userid>", methods=['GET', 'POST', 'DELETE', 'OPTIONS']) # type: ignore
+@backend_routes.route("/pvserver/<caseid>/<projectid>/<userid>", methods=['GET', 'POST', 'DELETE', 'OPTIONS']) # type: ignore
 def manage_pvserver(caseid, projectid, userid):
     global pvserver_process
 
@@ -182,7 +184,7 @@ def manage_pvserver(caseid, projectid, userid):
         else:
             return jsonify({"error": "PVServer is not running."}), 400
 
-@app.route("/blastfoamgen/<caseid>/<projectid>/<userid>", methods=['POST', 'OPTIONS'])  # type: ignore
+@backend_routes.route("/blastfoamgen/<caseid>/<projectid>/<userid>", methods=['POST', 'OPTIONS'])  # type: ignore
 def handle_blastfoam(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -235,7 +237,7 @@ def handle_blastfoam(caseid, projectid, userid):
 
         return send_file(zip_file_path, as_attachment=True)
 
-@app.route('/febiogen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/febiogen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_febiogen(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -291,7 +293,7 @@ def handle_febiogen(caseid, projectid, userid):
         print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True) 
 
-@app.route('/pulsegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/pulsegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_pulsegen(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -325,7 +327,7 @@ def handle_pulsegen(caseid, projectid, userid):
 
         return send_from_directory(directory, filename, as_attachment=True)
 
-@app.route('/precicegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/precicegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_precice(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -346,7 +348,7 @@ def handle_precice(caseid, projectid, userid):
         print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True)
     
-@app.route('/febio/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/febio/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_febio(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -388,7 +390,7 @@ def handle_febio(caseid, projectid, userid):
             ScriptGen.gen_solid_script(projectid, userid, caseid)
             return 'File uploaded successfully', 200
     
-@app.route("/displacementgraph/<caseid>/<projectid>/<userid>", methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route("/displacementgraph/<caseid>/<projectid>/<userid>", methods=['GET', 'OPTIONS']) # type: ignore
 def handle_displacement_graph(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -410,7 +412,7 @@ def handle_displacement_graph(caseid, projectid, userid):
 
         return send_file(displacement_graph_path, as_attachment=True)
 
-@app.route('/graphfiles/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS'])
+@backend_routes.route('/graphfiles/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS'])
 def handle_getgraphfiles(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -448,7 +450,7 @@ def handle_getgraphfiles(caseid, projectid, userid):
     
     return jsonify(graph_files), 200
 
-@app.route('/graphfile/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/graphfile/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getgraphfile(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -485,7 +487,7 @@ def handle_getgraphfile(caseid, projectid, userid):
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
-@app.route('/raw/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/raw/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getrawgraphfile(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -518,7 +520,7 @@ def handle_getrawgraphfile(caseid, projectid, userid):
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
-@app.route('/logfiles/<caseid>/<projectid>/<userid>', methods=['GET']) # type: ignore
+@backend_routes.route('/logfiles/<caseid>/<projectid>/<userid>', methods=['GET']) # type: ignore
 def handle_getlogfiles(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -591,7 +593,7 @@ def find_log_files(root_dir):
             log_files[relative_path] = current_log_files
     return log_files
 
-@app.route('/logfile/<caseid>/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/logfile/<caseid>/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
 
     if request.method == 'OPTIONS':
@@ -606,7 +608,7 @@ def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
 
         return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
 
-@app.route('/download/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/download/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_download(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -626,7 +628,7 @@ def handle_download(caseid, projectid, userid):
         return send_from_directory(project_base, filename, as_attachment=True)
 
 
-@app.route('/projects/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/projects/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_project(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -642,7 +644,7 @@ def handle_patch_project(projectid, userid):
 
         return {"message": 'Project updated'}, 200
 
-@app.route('/rename-simulation-case/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/rename-simulation-case/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_simulation(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -658,7 +660,7 @@ def handle_patch_simulation(caseid, projectid, userid):
 
         return {"message": 'Simulation Case Folder name updated'}, 200
 
-@app.route('/rename-case/<caseid>/<simulationcaseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/rename-case/<caseid>/<simulationcaseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_case(caseid, simulationcaseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -685,7 +687,7 @@ def delete_directory(path):
             os.rmdir(dir_path)
     os.rmdir(path)
 
-@app.route('/deleteproject/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/deleteproject/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_delete_project(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -698,7 +700,7 @@ def handle_delete_project(projectid, userid):
         else:
             return {"message": 'Project not found'}, 404
 
-@app.route('/deleteCase/<projectid>/<caseid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/deleteCase/<projectid>/<caseid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_deleteCase(projectid, caseid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -711,7 +713,7 @@ def handle_deleteCase(projectid, caseid, userid):
         else:
             return {"message": 'Case not found'}, 404
 
-@app.route('/run/<caseid>/<projectid>/<userid>', methods=['GET'])  # type: ignore
+@backend_routes.route('/run/<caseid>/<projectid>/<userid>', methods=['GET'])  # type: ignore
 def handle_run(caseid, projectid, userid):
     if request.method == 'GET':
         print("running", caseid, projectid)
@@ -744,7 +746,7 @@ def handle_run(caseid, projectid, userid):
 
         return 'Simulation started', 200
 
-@app.route('/test', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/test', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_test1():
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -752,7 +754,7 @@ def handle_test1():
         return "Hello World!"
 
 
-@app.route('/sendemail', methods=['POST'])
+@backend_routes.route('/sendemail', methods=['POST'])
 def send_email():
 
     event = json.loads(request.data)['event']
@@ -761,7 +763,7 @@ def send_email():
     mail.send(msg)
     return "Message sent!"
 
-@app.route('/verify', methods=['GET'])
+@backend_routes.route('/verify', methods=['GET'])
 def verify():
     verify_email = request.args.get('email')
 
@@ -821,7 +823,7 @@ def parse_other_file(filename, content):
     
     return result
 
-@app.route("/blastfoam/data/<caseid>/<projectid>/<userid>/<caseName>", methods=['GET', 'OPTIONS'])  # type: ignore
+@backend_routes.route("/blastfoam/data/<caseid>/<projectid>/<userid>/<caseName>", methods=['GET', 'OPTIONS'])  # type: ignore
 def fetch_blastfoam_data(caseid, projectid, userid, caseName):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -928,6 +930,8 @@ def _build_cors_preflight_response():
 
 def process_userid_for_folder_name(userid: str):
     return userid
+
+app.register_blueprint(backend_routes, url_prefix=INSTANCE_NAME)
 
 if __name__ == '__main__':  
     app.run(host='0.0.0.0', port=int(os.getenv('PORT')), debug=True, use_reloader = False)
