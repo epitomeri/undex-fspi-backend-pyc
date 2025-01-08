@@ -769,7 +769,7 @@ def handle_alive():
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'GET':
-        return True
+        return "ALIVE"
 
 @backend_routes.route('/sendemail', methods=['POST'])
 def send_email():
