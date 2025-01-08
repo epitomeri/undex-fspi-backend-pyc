@@ -131,7 +131,18 @@ def manage_pvserver(caseid, projectid, userid):
     # Start the server
     elif request.method == 'POST' or request.method == 'GET':
         if pvserver_process and pvserver_process.poll() is None:
-            return jsonify({"error": "PVServer is already running."}), 409
+
+            # Get the public IP address of the server
+            public_ip = get_public_ip()
+
+            # Construct the response data with the correct public information
+            response_data = {
+                "message": "PVServer is already running.",
+                "connection_url": f"cs://{public_ip}:{11111}",
+                "port": 11111,
+                "ip_address": public_ip
+            }
+            return jsonify(response_data), 200
 
         projects_dir = f'./projects/{userid}/{projectid}/{caseid}'
 
@@ -753,6 +764,12 @@ def handle_test1():
     elif request.method == 'GET':
         return "Hello World!"
 
+@backend_routes.route('/alive', methods=['GET', 'OPTIONS']) # type: ignore
+def handle_alive():
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        return True
 
 @backend_routes.route('/sendemail', methods=['POST'])
 def send_email():
