@@ -16,6 +16,7 @@ import requests
 
 import re
 import socket
+import psutil
 
 
 from auth0_api import auth0_api
@@ -738,17 +739,31 @@ def handle_run(caseid, projectid, userid):
             ScriptGen.gen_solid_script(caseid, projectid, userid)
 
         try:
-            result = subprocess.run(
+            process = subprocess.Popen(
                 ['bash', os.path.join(project_base_path, 'run.sh')],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,  # Ensures output is captured as a string
-                check=True  # Raises an exception if the command fails
             )
             print("STDOUT:")
-            print(result.stdout)  # Logs the standard output
+            print(process.stdout)  # Logs the standard output
             print("STDERR:")
-            print(result.stderr)  # Logs the standard error (if any)
+            print(process.stderr)  # Logs the standard error (if any)
+            
+            main_pid = process.pid
+            print(f"Main process PID: {main_pid}")
+            
+            process.communicate()
+
+            parent = psutil.Process(main_pid)
+            child_pids = [child.pid for child in parent.children(recursive=True)]
+            
+            print(f"Child PIDs: {child_pids}")
+            
+            # Combine main process and child PIDs
+            all_pids = [main_pid] + child_pids
+            print(all_pids)
+
         except subprocess.CalledProcessError as e:
             print("An error occurred while running the script.")
             print("Return Code:", e.returncode)
