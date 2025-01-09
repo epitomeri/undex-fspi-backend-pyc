@@ -16,7 +16,6 @@ import requests
 
 import re
 import socket
-import psutil
 
 
 from auth0_api import auth0_api
@@ -739,31 +738,17 @@ def handle_run(caseid, projectid, userid):
             ScriptGen.gen_solid_script(caseid, projectid, userid)
 
         try:
-            process = subprocess.Popen(
+            result = subprocess.run(
                 ['bash', os.path.join(project_base_path, 'run.sh')],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,  # Ensures output is captured as a string
+                check=True  # Raises an exception if the command fails
             )
             print("STDOUT:")
-            print(process.stdout)  # Logs the standard output
+            print(result.stdout)  # Logs the standard output
             print("STDERR:")
-            print(process.stderr)  # Logs the standard error (if any)
-            
-            main_pid = process.pid
-            print(f"Main process PID: {main_pid}")
-            
-            process.communicate()
-
-            parent = psutil.Process(main_pid)
-            child_pids = [child.pid for child in parent.children(recursive=True)]
-            
-            print(f"Child PIDs: {child_pids}")
-            
-            # Combine main process and child PIDs
-            all_pids = [main_pid] + child_pids
-            print(all_pids)
-
+            print(result.stderr)  # Logs the standard error (if any)
         except subprocess.CalledProcessError as e:
             print("An error occurred while running the script.")
             print("Return Code:", e.returncode)
@@ -771,6 +756,32 @@ def handle_run(caseid, projectid, userid):
             print("STDERR:", e.stderr)
 
         return 'Simulation started', 200
+
+@backend_routes.route('/<caseid>/<projectid>/<userid>/isRunning', methods=['GET'])  # type: ignore
+def handle_is_running(caseid, projectid, userid):
+    if request.method == 'GET':
+        print("running", caseid, projectid)
+        userid = process_userid_for_folder_name(userid)
+        project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
+        command = f"lsof +D {project_base_path} | grep 'mpirun' | awk '{{print $2}}'"
+
+        try:
+            # Run the command and capture the output
+            result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            print(result.stdout)
+            # Check if there are any processes
+            if result.stdout.strip():  # If output is not empty
+                return {"success": True, "running": True}, 200
+            else:
+                return {"success": True, "running": False}, 200
+        except subprocess.CalledProcessError as e:
+            # If command fails (e.g., directory doesn't exist or permission issues)
+            print(f"Error running command: {e}")
+            return {"success": False, "running": False}, 200
+        except Exception as e:
+            # Handle any other exceptions
+            print(f"Unexpected error: {e}")
+            return {"success": False, "running": False}, 200
 
 @backend_routes.route('/test', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_test1():

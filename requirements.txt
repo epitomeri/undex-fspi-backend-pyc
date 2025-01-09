@@ -16,3 +16,4 @@ urllib3==2.2.1
 Werkzeug==3.0.1
 wheel==0.41.2
 pymongo
+psutil
