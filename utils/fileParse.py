@@ -1,6 +1,7 @@
 from xml.etree import ElementTree as ET
 import time
 import os
+from collections import deque
 
 def get_log_enabled(file_path):
 
@@ -38,17 +39,20 @@ def tail_file(file_path):
 
     try:
         with open(file_path, "r") as file:
-            # Move to the end of the file after opening it
-            file.seek(0, 2)  # Seek to the end of the file (positioning for real-time tailing)
-            
+            lines = deque(file, maxlen=50)
+            for line in lines:
+                yield f"data: {line}\n\n"
+
+            # Move to the end of the file for real-time updates
+            file.seek(0, 2)
+
+            # Start streaming new lines as they are added to the file
             while True:
                 line = file.readline()
-                
                 if line:  # If a line is found, yield it
                     yield f"data: {line}\n\n"
                 else:  # If no new line, wait and continue checking
-                    time.sleep(0.5)  # You can adjust the sleep duration as needed
-                    continue
+                    time.sleep(0.5)
     except Exception as e:
         # Catch any exceptions (e.g., permission issues) and yield the error message
         yield f"data: Error reading log file: {str(e)}\n\n"
