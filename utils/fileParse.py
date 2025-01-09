@@ -36,16 +36,19 @@ def tail_file(file_path):
         yield f"data: Log does not exist. Retrying...\n\n"
         return
 
-    with open(file_path, "r") as file:
-        file.seek(0)  
-        lines = file.readlines()
-        for line in lines:
-            yield f"data: {line}\n\n"
-
-        file.seek(0, 2)  
-        while True:
-            line = file.readline()
-            if not line:
-                time.sleep(0.5)  
-                continue
-            yield f"data: {line}\n\n"
+    try:
+        with open(file_path, "r") as file:
+            # Move to the end of the file after opening it
+            file.seek(0, 2)  # Seek to the end of the file (positioning for real-time tailing)
+            
+            while True:
+                line = file.readline()
+                
+                if line:  # If a line is found, yield it
+                    yield f"data: {line}\n\n"
+                else:  # If no new line, wait and continue checking
+                    time.sleep(0.5)  # You can adjust the sleep duration as needed
+                    continue
+    except Exception as e:
+        # Catch any exceptions (e.g., permission issues) and yield the error message
+        yield f"data: Error reading log file: {str(e)}\n\n"

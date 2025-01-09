@@ -606,18 +606,35 @@ def find_log_files(root_dir):
 
 @backend_routes.route('/logfile/<caseid>/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
-
+    # Handle preflight CORS request
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
+
+    # Handle GET request
     elif request.method == 'GET':
+        # Process the userid for folder name if necessary
         userid = process_userid_for_folder_name(userid)
+
+        # Replace colon with a slash in casename to avoid filesystem issues
         if ":" in casename:
             casename = casename.replace(":", "/")
+
+        # Construct the file path
         file_path = f'./projects/{userid}/{projectid}/{caseid}/{casename}/{logfilename}'
 
-        print("THIS IS THE FILEPATH: ", file_path)
+        try:
+            # Check if the file exists and is accessible (optional but recommended for safety)
+            with open(file_path, 'r') as f:
+                # Streaming the file content using 'tail_file' function
+                return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
 
-        return Response(stream_with_context(tail_file(file_path)), mimetype='text/event-stream')
+        except FileNotFoundError:
+            # Return an error response if the file does not exist
+            return Response(f"File {logfilename} not found.", status=404)
+
+        except Exception as e:
+            # Handle other errors, like permission issues or unexpected errors
+            return Response(f"Error reading log file: {str(e)}", status=500)
 
 @backend_routes.route('/download/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_download(caseid, projectid, userid):
@@ -745,15 +762,15 @@ def handle_run(caseid, projectid, userid):
                 text=True,  # Ensures output is captured as a string
                 check=True  # Raises an exception if the command fails
             )
-            print("STDOUT:")
-            print(result.stdout)  # Logs the standard output
-            print("STDERR:")
-            print(result.stderr)  # Logs the standard error (if any)
+            # print("STDOUT:")
+            # print(result.stdout)  # Logs the standard output
+            # print("STDERR:")
+            # print(result.stderr)  # Logs the standard error (if any)
         except subprocess.CalledProcessError as e:
             print("An error occurred while running the script.")
             print("Return Code:", e.returncode)
-            print("STDOUT:", e.stdout)
-            print("STDERR:", e.stderr)
+            # print("STDOUT:", e.stdout)
+            # print("STDERR:", e.stderr)
 
         return 'Simulation started', 200
 
