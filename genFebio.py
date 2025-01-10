@@ -11,6 +11,8 @@ def dict_to_xml(tag, d):
     else:
         keys = d.keys()
     for key in keys:
+        if key not in d.keys():
+            continue
         val = d[key]
         if key == "#value":
             # If the key is '#value', set the text content of the current element
