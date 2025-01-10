@@ -63,22 +63,23 @@ def json_to_febio_template(febio_form, xml_object):
         })
 
     # Convert load controllers back to XML format
-    for i in range(len(xml_object["LoadData"]["load_controller"])):
-        if i >= len(febio_form["loadController"]["loadControllers"]):
-            continue
-        load_controller = febio_form["loadController"]["loadControllers"][i]
-        xml_object["LoadData"]["load_controller"][i].update({
-            "@type": load_controller["type"],
-            "interpolate": {
-                "#value": load_controller["interpolation"]
-            },
-            "points": {
-                "pt": [
-                    {"#value": load_controller["firstPoint"]},
-                    {"#value": load_controller["secondPoint"]}
-                ]
-            }
-        })
+    if(xml_object["LoadData"]):
+        for i in range(len(xml_object["LoadData"]["load_controller"])):
+            if i >= len(febio_form["loadController"]["loadControllers"]):
+                continue
+            load_controller = febio_form["loadController"]["loadControllers"][i]
+            xml_object["LoadData"]["load_controller"][i].update({
+                "@type": load_controller["type"],
+                "interpolate": {
+                    "#value": load_controller["interpolation"]
+                },
+                "points": {
+                    "pt": [
+                        {"#value": load_controller["firstPoint"]},
+                        {"#value": load_controller["secondPoint"]}
+                    ]
+                }
+            })
 
     # Convert steps back to XML format
     for i in range(len(xml_object["Step"]["step"])):

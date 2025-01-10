@@ -553,37 +553,6 @@ def handle_getlogfiles(caseid, projectid, userid):
             enabled, lfm = get_log_enabled(xml_config_path)
             log_file_name = lfm if lfm is not None else log_file_name
 
-        # for raw_case in os.listdir(project_base): # fluid-blastFOAM level
-        #     if raw_case != "precice-run":
-        #         case_path = os.path.join(project_base, raw_case)
-        #         if os.path.isdir(case_path) and raw_case != 'validation':
-        #             log_files[raw_case] = []
-
-        #             for item in os.listdir(case_path): # 0-case-1 level for fluid and log level for else
-        #                 item_path = os.path.join(case_path, item)
-                        
-        #                 if raw_case == 'fluid-blastFOAM' and os.path.isdir(item_path):
-        #                     log_files[f"{raw_case}:{item}"] = []
-        #                     for blast_case in os.listdir(item_path): # logs in blast cases level.
-        #                         blast_case_path = os.path.join(item_path, blast_case)
-        #                         if os.path.isfile(blast_case_path) and (blast_case.endswith('.log') or blast_case.startswith('log.')):
-        #                             log_files[f"{raw_case}:{item}"].append(blast_case)
-
-        #                     if len(log_files[f"{raw_case}:{item}"]) == 0:
-        #                         log_files.pop(f"{raw_case}:{item}")
-                        
-        #                 elif os.path.isfile(item_path) and (item.endswith('.log') or item.startswith('log.')):
-        #                     log_files[raw_case].append(item)
-                    
-        #             # Sort log files by last modified time
-        #             log_files[raw_case].sort(key=lambda f: os.path.getmtime(os.path.join(case_path, f)), reverse=True)
-                    
-        #             if enabled == 'True' and raw_case=="coupling-preCICE":  # type: ignore
-        #                 log_files[raw_case].append(log_file_name)
-
-        #             if len(log_files[raw_case]) == 0:
-        #                 log_files.pop(raw_case)
-
         log_files = find_log_files(project_base)
 
         return jsonify(log_files), 200

@@ -180,9 +180,9 @@ cd Fluid-Inner
                     for case_item in os.listdir(item_path):
                         case_item_path = os.path.join(item_path, case_item)
                         if 'Allrun' in os.listdir(case_item_path):
-                            run_script_lines.append(f"chmod 755 {case_item_path}/Allrun")
                             run_script_lines.append(f"chmod 755 {case_item_path}/Allclean")
-                            run_script_lines.append("kill_blastfoam.sh")
+                            run_script_lines.append(f"chmod 755 {case_item_path}/Allrun")
+                            run_script_lines.append(f"kill_blastfoam.sh {case_item_path}/")
                             run_script_lines.append(f"./{case_item_path}/Allclean")
                             run_script_lines.append(f"rm -f {case_item_path}/log.*")
                             run_script_lines.append(f"./{case_item_path}/Allrun")
