@@ -63,7 +63,7 @@ def json_to_febio_template(febio_form, xml_object):
         })
 
     # Convert load controllers back to XML format
-    if(xml_object["LoadData"]):
+    if("LoadData" in xml_object.keys()):
         for i in range(len(xml_object["LoadData"]["load_controller"])):
             if i >= len(febio_form["loadController"]["loadControllers"]):
                 continue
