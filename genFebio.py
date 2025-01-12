@@ -323,7 +323,7 @@ class FebioConfigGenerator():
 
     def generate_xml(self, data, userid, projectid, caseid):
         
-        data["template"]["template"] = json_to_febio_template(data, data["template"]["template"])
+        data["template"] = json_to_febio_template(data, data["template"])
         
         file_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid/febio-case.feb'
 
@@ -331,7 +331,7 @@ class FebioConfigGenerator():
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Write the final XML tree to file
-        tree = ET.ElementTree(json_to_xml_string(data["template"]["template"], "febio_spec"))
+        tree = ET.ElementTree(json_to_xml_string(data["template"], "febio_spec"))
         tree.write(file_path, encoding="utf-8", xml_declaration=True)
 
         return file_path

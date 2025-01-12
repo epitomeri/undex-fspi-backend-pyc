@@ -253,45 +253,20 @@ def handle_febiogen(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     elif request.method == 'POST':
-
         userid = process_userid_for_folder_name(userid)
         directory_path = f'./projects/{userid}/{projectid}/{caseid}/solid-FEBio/Solid'
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
 
-        file = ''
-        mesh_path = None
-        boundary_path = None
-
-
         if not os.path.exists(f'./tmp/{projectid}/Solid/'):
             os.makedirs(f'./tmp/{projectid}/Solid/')
 
-        if 'meshFile' in request.files:
-            file = request.files['meshFile']
-            file.save(f'./tmp/{projectid}/Solid/{file.filename}')
-            mesh_path = f'./tmp/{projectid}/Solid/{file.filename}'
-        else:
-            default_bc_file = './resources/mesh.feb'
-
-            if os.path.exists(default_bc_file):
-                mesh_path = default_bc_file
-            # else:
-            #     return jsonify({'error': 'Default mesh file not found.'}), 401
-
-        if 'boundaryConditionsFile' in request.files:
-            file = request.files['boundaryConditionsFile']
-            file.save(f'./tmp/{projectid}/Solid/{file.filename}')
-            boundary_path = f'./tmp/{projectid}/Solid/{file.filename}'
-        else:
-            default_bc_file = './resources/bcfile.txt'
-            if os.path.exists(default_bc_file):
-                boundary_path = default_bc_file
-            # else:
-            #     return jsonify({'error': 'Default bc file not found.'}), 401
-
         solver_case_json = request.form.get('solverCase')
+        templateUrl = request.form.get('templateLink')
         data = json.loads(solver_case_json) # type: ignore
+        data['template'] = fetch_feb_data(templateUrl)
+        if data['template']:
+            print(data['template'].keys())
 
         generator = FebioConfigGenerator()
         output_file_path = generator.generate_xml(data, userid, projectid, caseid)
@@ -746,7 +721,6 @@ def handle_run(caseid, projectid, userid):
 @backend_routes.route('/<caseid>/<projectid>/<userid>/isRunning', methods=['GET'])  # type: ignore
 def handle_is_running(caseid, projectid, userid):
     if request.method == 'GET':
-        print("running", caseid, projectid)
         userid = process_userid_for_folder_name(userid)
         project_base_path = f'./projects/{userid}/{projectid}/{caseid}'
         command = f"lsof +D {project_base_path} | grep 'mpirun' | awk '{{print $2}}'"
@@ -949,6 +923,24 @@ def parse_file_content(content, filename):
     }
     
     return result
+
+def fetch_feb_data(url):
+    try:
+        
+        # Make the GET request
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
+        
+        # Save response content as JSON
+        feb_data = response.json()
+        return feb_data
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Error occurred: {e}")
+        return None
+    except json.JSONDecodeError:
+        print("Error decoding JSON. Ensure the API returns a valid JSON.")
+        return None
 
 def _build_cors_preflight_response():
     response = make_response()
