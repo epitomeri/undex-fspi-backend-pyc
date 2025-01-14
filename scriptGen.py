@@ -123,7 +123,7 @@ echo "Preparing and running the Solid participant..."
 cd {project_base_path}
 cd Solid
 ./Allclean
-febio-precice febio-case.feb ../../coupling-preCICE/precice-config.xml > febio-precice.log 
+febio4-precice febio-case.feb ../../coupling-preCICE/precice-config.xml > febio-precice.log 
 """
     
             file.write(solid_script)

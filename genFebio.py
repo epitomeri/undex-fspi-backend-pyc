@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import xml.dom.minidom
+from xml.dom import minidom
 import re
 import os
 
@@ -160,11 +160,17 @@ def json_to_febio_template(febio_form, xml_object):
 class FebioConfigGenerator():
     def __init__(self) -> None:
         pass
-
+    
+    
     def generate_xml_(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
 
+        def prettify_xml(element):
+            """Return a pretty-printed XML string for the Element."""
+            rough_string = ET.tostring(element, encoding="utf-8")
+            reparsed = minidom.parseString(rough_string)
+            return reparsed.toprettyxml(indent="    ")
+        
         def safe_attrib(value):
-            """Ensures that the attribute value is a string and not None."""
             return str(value) if value is not None else ""
 
         def find_surface_names(mesh_content):
@@ -329,8 +335,11 @@ class FebioConfigGenerator():
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Write the final XML tree to file
-        tree = ET.ElementTree(febio_spec)
-        tree.write(file_path, encoding="utf-8", xml_declaration=True)
+        febio_spec = prettify_xml(febio_spec)
+        # tree = ET.ElementTree(febio_spec)
+        # tree.write(file_path, encoding="utf-8", xml_declaration=True)
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(prettify_xml(febio_spec))
 
         return file_path
 
