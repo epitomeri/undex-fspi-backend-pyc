@@ -267,7 +267,7 @@ class PreCICEConfigGenerator:
                 "from": name,
                 "to": "FEBio",
                 "network": str(data["network"]["type"]),
-                "exchange-directory": ".."
+                "exchange-directory": "../.."
             }
 
             if(data["network"]["type"] == "default"): del attributes["network"]
