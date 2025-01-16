@@ -241,7 +241,6 @@ def handle_blastfoam(caseid, projectid, userid):
                     os.chmod(os.path.join(item_path, 'Allclean'), 0o755)
                     subprocess.run(['bash', os.path.join(item_path, 'Allclean')])
 
-
         zip_file_name = os.path.basename(projects_dir) + '.zip'
         zip_file_path = os.path.join('./tmp', secure_filename(zip_file_name)) # type: ignore
         shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=projects_dir)
@@ -264,7 +263,7 @@ def handle_febiogen(caseid, projectid, userid):
         solver_case_json = request.form.get('solverCase')
         templateUrl = request.form.get('templateLink')
         data = json.loads(solver_case_json) # type: ignore
-        data['template'] = fetch_feb_data(templateUrl)
+        data['template'] = fetch_feb_file_from_database(templateUrl)
         if data['template']:
             print(data['template'].keys())
 
@@ -278,6 +277,41 @@ def handle_febiogen(caseid, projectid, userid):
         ScriptGen.gen_solid_script(projectid, userid, caseid)
         print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True) 
+    
+@backend_routes.route('/<caseid>/<projectid>/<userid>/lsdynagen', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_lsdynagen(caseid, projectid, userid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'POST':
+        userid = process_userid_for_folder_name(userid)
+        directory_path = f'./projects/{userid}/{projectid}/{caseid}/hydro-LSDYNA/'
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+
+        solver_case_json = request.form.get('solverCase')
+        serverLink = request.form.get('serverLink')
+        data = json.loads(solver_case_json) # type: ignore
+        for file_data in data["files"]:
+            file_url = file_data["url"]
+            file_content = fetch_file_from_database(f"{serverLink}{file_url}")  # Assuming this returns binary content
+            file_name = file_data["name"]
+
+            # Save file in the directory
+            file_path = os.path.join(directory_path, file_name)
+            with open(file_path, 'wb') as f:
+                f.write(file_content)
+
+         # Create the zip file in the ./tmp directory
+        zip_file_name = secure_filename(os.path.basename(directory_path.rstrip('/'))) + '.zip'
+        tmp_dir = f'./tmp/{caseid}'
+        if not os.path.exists(tmp_dir):
+            os.makedirs(tmp_dir)
+        
+        zip_file_path = os.path.join(tmp_dir, zip_file_name)
+        shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=directory_path)
+
+        # Send the zip file to the client
+        return send_file(zip_file_path, as_attachment=True, mimetype='application/zip')
 
 @backend_routes.route('/pulsegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_pulsegen(caseid, projectid, userid):
@@ -924,7 +958,7 @@ def parse_file_content(content, filename):
     
     return result
 
-def fetch_feb_data(url):
+def fetch_feb_file_from_database(url):
     try:
         
         # Make the GET request
@@ -941,6 +975,20 @@ def fetch_feb_data(url):
     except json.JSONDecodeError:
         print("Error decoding JSON. Ensure the API returns a valid JSON.")
         return None
+    
+def fetch_file_from_database(file_url: str) -> bytes:
+    try:
+        response = requests.get(file_url, timeout=10)
+
+        # Check if the request was successful
+        if response.status_code != 200:
+            raise ValueError(f"Failed to fetch file from URL: {file_url}. HTTP Status: {response.status_code}")
+
+        # Return the binary content of the file
+        return response.content
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching file from URL: {file_url}. Error: {e}")
+        raise
 
 def _build_cors_preflight_response():
     response = make_response()
