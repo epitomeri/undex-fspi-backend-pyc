@@ -52,7 +52,7 @@ class PreCICEConfigGenerator:
                     except Exception as e:
                         print(f"An error occurred while processing {file_path}: {e}")
 
-    def load_mesh_name(self, directory) -> str | None:
+    def load_mesh_name(self, directory) -> str:
         for root, dirs, files in os.walk(directory):
             for file in files:
                 if file == "febio-case.feb":
@@ -76,7 +76,7 @@ class PreCICEConfigGenerator:
                     except Exception as e:
                         print(f"An error occurred while processing {file_path}: {e}")
 
-        return None  # Return None if no matching surface_load is found
+        return
 
     def generate_xml(self, data, projectid, userid, caseid):
 
