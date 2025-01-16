@@ -74,7 +74,8 @@ def update_control_dict(caseid, projectid, blastfoam_folder, userid):
     """
     Updates the controlDict file in the specified blastfoam folder to change stopAt to noWriteNow.
     """
-    control_dict_path = os.path.join('./projects', userid, 'projects', projectid, caseid, blastfoam_folder, 'system', 'controlDict')
+    control_dict_path = os.path.join('./projects', userid, projectid, caseid, blastfoam_folder, 'system', 'controlDict')
+    print(control_dict_path)
 
     # Check if the file exists
     if not os.path.exists(control_dict_path):
@@ -109,7 +110,7 @@ def update_control_dict_endpoint(caseid, projectid, userid, blastfoam_folder):
     if request.method == 'POST' or request.method == 'GET':
         # Call the function to update controlDict
         userid = process_userid_for_folder_name(userid)
-        result, status_code = update_control_dict(caseid, projectid, blastfoam_folder, userid)
+        result, status_code = update_control_dict(caseid, projectid, f'fluid-blastFOAM/{blastfoam_folder}', userid)
         return jsonify(result), status_code
 
 def get_public_ip():
