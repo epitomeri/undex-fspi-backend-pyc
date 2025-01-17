@@ -322,12 +322,12 @@ def handle_pulsegen(caseid, projectid, userid):
         data = request.get_json()
 
         userid = process_userid_for_folder_name(userid)
-        directory_path = f'./projects/{userid}/{projectid}/{caseid}/Physiology'
+        directory_path = f'./projects/{userid}/{projectid}/{caseid}/physiology-pulse'
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
 
-        if not os.path.exists(f'./tmp/{projectid}/Physiology/'):
-            os.makedirs(f'./tmp/{projectid}/Physiology/')
+        if not os.path.exists(f'./tmp/{projectid}/physiology-pulse/'):
+            os.makedirs(f'./tmp/{projectid}/physiology-pulse/')
 
         print('data is ', data)
 
