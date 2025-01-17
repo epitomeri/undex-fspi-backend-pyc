@@ -889,7 +889,7 @@ def fetch_blastfoam_data(caseid, projectid, userid, caseName):
                     # Parse content to get the required data format
                         parsed_content = parse_file_content(content, file)
                     else:
-                            parsed_content = parse_other_file(file, content)
+                        parsed_content = parse_other_file(file, content)
                     
                     response_data.append({
                         'subfolder': os.path.relpath(subdir, project_base),
