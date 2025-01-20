@@ -35,7 +35,7 @@ def HowTo_ExpandedRespiratory():
         {% endfor %}
     ]
     data_req_mgr = SEDataRequestManager(data_requests)
-    data_req_mgr.set_results_filename("pulseresults.csv")
+    data_req_mgr.set_results_filename("{{pulse_results_path}}/pulseresults.csv")
 
     state_filename = Path("./test_results/howto/Satish.json")
     if state_filename.exists():
@@ -92,7 +92,7 @@ def HowTo_ExpandedRespiratory():
 HowTo_ExpandedRespiratory()
 """
 
-    def generate_py_script(self, data, userid, projectid, caseid):
+    def generate_py_script(self, data, userid, projectid, caseid, app_dir):
         # Define unit mappings for each request type
         request_units = {
             'HeartRate': 'FrequencyUnit.Per_min',
@@ -119,7 +119,9 @@ HowTo_ExpandedRespiratory()
                                           damages=data['cardioModel']['damages'],
                                           max_time_of_sim=data['simSettings']['maxSimTime'],
                                           peakPressureCriterion=data['peakPressure'],
-                                          peakPressureData=data['pressureCriterion'])
+                                          peakPressureData=data['pressureCriterion'],
+                                          pulse_results_path=os.path.join(app_dir, 'projects', userid, projectid, caseid, 'physiology-pulse')
+                                          )
 
         # Ensure the directory exists
         directory_path = os.path.join(f'./projects/{userid}/{projectid}/{caseid}/physiology-pulse')
@@ -130,7 +132,7 @@ HowTo_ExpandedRespiratory()
         with open(script_path, 'w') as file:
             file.write(rendered_script)
 
-        return f'./projects/{userid}/{projectid}/{caseid}/physiology-pulse/runPulse.py'
+        return script_path
 
 # Example usage
 data = {

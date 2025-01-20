@@ -331,7 +331,10 @@ def handle_pulsegen(caseid, projectid, userid):
 
         generator = PulseConfigGenerator()
 
-        output_file_path = generator.generate_py_script(data, userid, projectid, caseid)
+        # Get the absolute path of app.py
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+
+        output_file_path = generator.generate_py_script(data, userid, projectid, caseid, app_dir)
 
         directory = os.path.dirname(output_file_path)
         filename = os.path.basename(output_file_path)
@@ -445,14 +448,14 @@ def handle_getgraphfiles(caseid, projectid, userid):
         
         graph_files = {
             "Displacement Response": "",
-            "Pulse Graph": physiology_graph_path,
+            "Pulse Data Visualization": physiology_graph_path,
         }
 
 
         if not os.path.exists(displacement_graph_path):
             del graph_files["Displacement Response"]
         if not os.path.exists(physiology_graph_path):
-            del graph_files["Pulse Graph"]
+            del graph_files["Pulse Data Visualization"]
         
         
     if os.path.exists(project_base):
@@ -536,7 +539,7 @@ def handle_getrawgraphfile(caseid, projectid, userid):
                 return response
 
         except FileNotFoundError:
-            return "File not found1", 404
+            return "File not found", 404
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
