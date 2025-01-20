@@ -22,7 +22,7 @@ def HowTo_ExpandedRespiratory():
     pulse.log_to_console(True)
 
     cfg = PulseConfiguration()
-    cfg.set_expanded_lung(eSwitch.On)
+    cfg.set_expanded_lungs(eSwitch.On)
     pulse.set_configuration_override(cfg)
 
     data_requests = [
