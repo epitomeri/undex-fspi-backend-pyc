@@ -192,7 +192,7 @@ cd Fluid-Inner
                         run_script_lines.append(f"cd {pulse_install_dir} && python3 {run_pulse_dir}/runPulse.py &")
                     else:
                         print("EnvIronment variable PULSE_INSTALL_DIR is not set.")
-
+        run_script_lines.append("echo 'All solvers have been started.'")
         run_script = "\n".join(run_script_lines)
         with open(os.path.join(project_base_path, 'run.sh'), 'w') as file:
             file.write(run_script)

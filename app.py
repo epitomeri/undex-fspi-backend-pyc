@@ -329,8 +329,6 @@ def handle_pulsegen(caseid, projectid, userid):
         if not os.path.exists(f'./tmp/{projectid}/physiology-pulse/'):
             os.makedirs(f'./tmp/{projectid}/physiology-pulse/')
 
-        print('data is ', data)
-
         generator = PulseConfigGenerator()
 
         output_file_path = generator.generate_py_script(data, userid, projectid, caseid)
@@ -441,7 +439,8 @@ def handle_getgraphfiles(caseid, projectid, userid):
         userid = process_userid_for_folder_name(userid)
         project_base = f'./projects/{userid}/{projectid}/{caseid}'
         displacement_graph_path = f'{project_base}/validation/blastfoam_displacement.png'
-        physiology_graph_path = f'{os.getenv("PULSE_INSTALL_DIR")}/pulseresults.csv'
+        # physiology_graph_path = f'{os.getenv("PULSE_INSTALL_DIR")}/pulseresults.csv'
+        physiology_graph_path = f'./projects/{userid}/{projectid}/{caseid}/physiology-pulse/pulseresults.csv'
 
         
         graph_files = {
@@ -516,7 +515,7 @@ def handle_getrawgraphfile(caseid, projectid, userid):
         graphfilename = request.args.get('name')
         addon = request.args.get('add')
         userid = process_userid_for_folder_name(userid)
-        file_path = f'./projects/{userid}/{projectid}/{caseid}/{graphfilename}'
+        file_path = f'./projects/{userid}/{projectid}/{caseid}/physiology-pulse/{graphfilename}'
         if (addon == "pulseInstall"):
             file_path = f'{os.getenv("PULSE_INSTALL_DIR")}/{graphfilename}'
         
@@ -566,6 +565,114 @@ def handle_getlogfiles(caseid, projectid, userid):
         log_files = find_log_files(project_base)
 
         return jsonify(log_files), 200
+
+@backend_routes.route('/<caseid>/<projectid>/<userid>/inputFiles', methods=['GET']) # type: ignore
+def handle_getinputFiles(caseid, projectid, userid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        userid = process_userid_for_folder_name(userid)
+        project_base = f'./projects/{userid}/{projectid}/{caseid}'
+
+        if not os.path.exists(project_base):
+            return jsonify({"error": "Project path does not exist"}), 404
+
+        # Define the folder and file structure to search
+        search_structure = {
+            "fluid-blastFOAM": {
+                "0": "ALL",
+                "constant": [
+                    "dynamicMeshDict",
+                    "g",
+                    "momentumTransport",
+                    "phaseProperties"
+                ],
+                "system": [
+                    "blockMeshDict",
+                    "controlDict",
+                    "decomposeParDict",
+                    "fvSchemes",
+                    "fvSolution",
+                    "preciceDict",
+                    "setFieldsDict",
+                    "snappyHexMeshDict",
+                    "surfaceFeaturesDict"
+                ]
+            },
+            "solid-FEBio": {
+                "Solid": ["febio-case.feb"]
+            },
+            "coupling-preCICE": ["precice-config.xml"],
+            "physiology-pulse": ["runPulse.py"]
+        }
+
+        def find_files_by_structure(base_dir, folder_structure, current_path=""):
+            """
+            Recursively searches for files matching the structure and returns them in a dictionary
+            with relative paths as keys and lists of filenames as values.
+            """
+            result_files = {}
+
+            for folder, contents in folder_structure.items():
+                folder_path = os.path.join(base_dir, current_path, folder)
+                if folder == "fluid-blastFOAM":
+                    # Special handling for fluid-blastFOAM: recursively search all subfolders
+                    for subdir, _, _ in os.walk(os.path.join(base_dir, current_path, folder)):
+                        subdir_relative = os.path.relpath(subdir, base_dir).replace(os.sep, ":")
+                        for subfolder, subcontents in contents.items():
+                            specific_path = os.path.join(subdir, subfolder)
+                            relative_path = os.path.join(subdir_relative, subfolder).replace(os.sep, ":")
+                            if os.path.exists(specific_path):
+                                if subcontents == "ALL":
+                                    # Add all files in this folder
+                                    all_files = [
+                                        f for f in os.listdir(specific_path)
+                                        if os.path.isfile(os.path.join(specific_path, f))
+                                    ]
+                                    if all_files:
+                                        result_files[relative_path] = all_files
+                                else:
+                                    # Match specific files case-insensitively
+                                    matched_files = [
+                                        f for f in os.listdir(specific_path)
+                                        if os.path.isfile(os.path.join(specific_path, f)) and
+                                        f.lower() in map(str.lower, subcontents)
+                                    ]
+                                    if matched_files:
+                                        result_files[relative_path] = matched_files
+                else:
+                    # General case for other folders
+                    if os.path.exists(folder_path):
+                        relative_path = os.path.join(current_path, folder).replace(os.sep, ":")
+                        if isinstance(contents, dict):
+                            # Traverse subdirectories
+                            nested_files = find_files_by_structure(base_dir, contents, os.path.join(current_path, folder))
+                            result_files.update(nested_files)
+                        elif contents == "ALL":
+                            # Add all files in this folder
+                            all_files = [
+                                f for f in os.listdir(folder_path)
+                                if os.path.isfile(os.path.join(folder_path, f))
+                            ]
+                            if all_files:
+                                result_files[relative_path] = all_files
+                        else:
+                            # Add specific files, matching case-insensitively
+                            matched_files = [
+                                f for f in os.listdir(folder_path)
+                                if os.path.isfile(os.path.join(folder_path, f)) and
+                                f.lower() in map(str.lower, contents)
+                            ]
+                            if matched_files:
+                                result_files[relative_path] = matched_files
+
+            return result_files
+
+        # Start searching for files
+        matched_files = find_files_by_structure(project_base, search_structure)
+
+        # Return the results
+        return jsonify(matched_files), 200
 
 def find_log_files(root_dir):
     log_files = {}
