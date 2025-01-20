@@ -1,9 +1,6 @@
 import xml.etree.ElementTree as ET
-import xml.dom.minidom
 import re
 import os
-
-from jinja2 import Undefined
 
 class PreCICEConfigGenerator:
     def __init__(self):
@@ -55,6 +52,32 @@ class PreCICEConfigGenerator:
                     except Exception as e:
                         print(f"An error occurred while processing {file_path}: {e}")
 
+    def load_mesh_name(self, directory) -> str:
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file == "febio-case.feb":
+                    file_path = os.path.join(root, file)
+
+                    # Parse the file and extract the required data
+                    try:
+                        tree = ET.parse(file_path)
+                        root_element = tree.getroot()
+                        # Find all surface_load elements
+                        for surface_load in root_element.findall(".//surface_load"):
+                            load_type = surface_load.get("type")
+                            pressure_element = surface_load.find("pressure")
+
+                            if load_type == "pressure" and pressure_element is not None:
+                                pressure_type = pressure_element.get("type")
+                                if pressure_type == "map":
+                                    surface = surface_load.get("surface")
+                                    return surface  # Return the first matching surface attribute
+
+                    except Exception as e:
+                        print(f"An error occurred while processing {file_path}: {e}")
+
+        return
+
     def generate_xml(self, data, projectid, userid, caseid):
 
         projects_dir = f'./projects/{userid}/{projectid}/{caseid}/coupling-preCICE' 
@@ -62,9 +85,9 @@ class PreCICEConfigGenerator:
         if not os.path.exists(projects_dir):
             os.makedirs(projects_dir)
 
-        self.load_precice_contents(projects_dir)
-
-        print(self.precice_contents)
+        self.load_precice_contents(f'{projects_dir}/..')
+        
+        mesh_name = self.load_mesh_name(f'{projects_dir}/..')
 
         start = ET.Element("precice-configuration")
 
@@ -84,13 +107,7 @@ class PreCICEConfigGenerator:
         elif (data["variables"]["fluidToSolid"] == "Pressure"):
             dataType = "data:scalar"
 
-        fluid_solid_type = ""
-        if (data["variables"]["fluidToSolid"] == "Stress"):
-            fluid_solid_type = "Stress"
-        elif (data["variables"]["fluidToSolid"] == "Pressure"):
-            fluid_solid_type = "Pressure"
-
-        data_vector = ET.SubElement(root, dataType, name=data["variables"]["fluidToSolid"])
+        ET.SubElement(root, dataType, name=data["variables"]["fluidToSolid"])
 
         for content in self.precice_contents:
             write_data = self.extract_values(content, "writeData")
@@ -116,7 +133,7 @@ class PreCICEConfigGenerator:
             use_data_stress_outer_fluid = ET.SubElement(mesh_fluid_outer_nodes, "use-data", name=write_data)
             use_data_displacements0_fluid = ET.SubElement(mesh_fluid_outer_nodes, "use-data", name=read_data)
 
-        mesh_solid = ET.SubElement(root, "mesh", name="Solid")
+        mesh_solid = ET.SubElement(root, "mesh", name=f'{mesh_name}')
         mesh_fluid_solid = ET.SubElement(mesh_solid, "use-data", name=data["variables"]["fluidToSolid"])
         if(data["variables"]["fluidToSolid"] ==  "Stress"):
             data_vector = ET.SubElement(mesh_solid, "use-data", name="Stress")
@@ -141,7 +158,7 @@ class PreCICEConfigGenerator:
             use_mesh_fluid_inner_nodes = ET.SubElement(participant_fluid_inner, "use-mesh", name=f'{name}-Nodes', provide="yes")
 
             attributes = {
-                "name": 'Solid',
+                "name": f'{mesh_name}',
                 "from": "FEBio",
             }
 
@@ -152,7 +169,7 @@ class PreCICEConfigGenerator:
 
             attributes = {
                 "direction": "read",
-                "from": "Solid",
+                "from": f'{mesh_name}',
                 "to": f'{name}-Nodes',
                 "constraint": "consistent"
             }
@@ -163,7 +180,7 @@ class PreCICEConfigGenerator:
                 export_vtk = ET.SubElement(participant_fluid_inner, "export:vtk", directory=f'preCICE-{name}-output')
 
         participant_febio = ET.SubElement(root, "participant", name="FEBio")
-        use_mesh_solid_febio = ET.SubElement(participant_febio, "use-mesh", name="Solid", provide="yes")
+        use_mesh_solid_febio = ET.SubElement(participant_febio, "use-mesh", name=f'{mesh_name}', provide="yes")
 
         for content in self.precice_contents:
             name = self.extract_participant(content)
@@ -182,7 +199,7 @@ class PreCICEConfigGenerator:
 
             attributes = {
                 "name": write_data,
-                "mesh": 'Solid'
+                "mesh": f'{mesh_name}'
             }
             
             use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "read-data", attrib=attributes) # type: ignore
@@ -190,12 +207,12 @@ class PreCICEConfigGenerator:
 
         attributes = {
             "name": 'Displacements0',
-            "mesh": 'Solid',
+            "mesh": f'{mesh_name}',
         }
         use_mesh_fluid_inner_nodes_febio = ET.SubElement(participant_febio, "write-data", attrib=attributes) # type: ignore
 
 
-        action_summation = ET.SubElement(participant_febio, "action:summation", timing="read-mapping-post", mesh="Solid")
+        action_summation = ET.SubElement(participant_febio, "action:summation", timing="read-mapping-post", mesh=f'{mesh_name}')
             
         for content in self.precice_contents:
             name = self.extract_participant(content)
@@ -206,14 +223,14 @@ class PreCICEConfigGenerator:
         target_data = ET.SubElement(action_summation, "target-data", name=data["variables"]["fluidToSolid"])
 
         
-        read_data_name = ET.SubElement(participant_febio, "read-data", name=data["variables"]["fluidToSolid"], mesh="Solid") # type: ignore
+        read_data_name = ET.SubElement(participant_febio, "read-data", name=data["variables"]["fluidToSolid"], mesh=f'{mesh_name}') # type: ignore
 
         for content in self.precice_contents:
             name = self.extract_participant(content)
 
             attributes = {
                 "direction": "read",
-                "to": "Solid",
+                "to": f'{mesh_name}',
                 "from": f'{name}-Nodes',
                 "constraint": "consistent"
             }
@@ -230,7 +247,7 @@ class PreCICEConfigGenerator:
 
             attributes = {
                 "direction": "read",
-                "to": "Solid",
+                "to": f'{mesh_name}',
                 "from": f'{name}-Nodes',
                 "constraint": "consistent"
             }
@@ -250,7 +267,7 @@ class PreCICEConfigGenerator:
                 "from": name,
                 "to": "FEBio",
                 "network": str(data["network"]["type"]),
-                "exchange-directory": ".."
+                "exchange-directory": "../.."
             }
 
             if(data["network"]["type"] == "default"): del attributes["network"]
@@ -285,7 +302,7 @@ class PreCICEConfigGenerator:
 
             attributes = {
                 "data": "Displacements0",
-                "mesh": "Solid",
+                "mesh": f'{mesh_name}',
                 "from": "FEBio",
                 "to": name
             }

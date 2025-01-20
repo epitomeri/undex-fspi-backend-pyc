@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import xml.dom.minidom
+from xml.dom import minidom
 import re
 import os
 
@@ -120,24 +120,37 @@ def json_to_febio_template(febio_form, xml_object):
 
         # Convert loads back to XML format
         for load in step["loads"]:
-            surface_load = {
-                "@name": load["pressureLabel"],
-                "pressure": {
-                    "@lc": load["loadController"],
-                    "#value": load["pressure"]
-                },
-                "linear": {
-                    "#value": load["linearParam"]
-                },
-                "symmetric_stiffness": {
-                    "#value": load["matrix"]
-                },
-                "shell_bottom": {
-                    "#value": load["pressureTop"]
-                },
-                "@surface": load["surfaceName"],
-                "@type": load["loadType"]
-            }
+            surface_load = {}
+
+            if "pressureLabel" in load:
+                surface_load["@name"] = load["pressureLabel"]
+
+            if "loadController" in load or "pressure" in load or "pressureValType" in load:
+                surface_load["pressure"] = {}
+                if "loadController" in load:
+                    surface_load["pressure"]["@lc"] = load["loadController"]
+                if "pressure" in load:
+                    surface_load["pressure"]["#value"] = load["pressure"]
+                if "pressureValType" in load:
+                    surface_load["pressure"]["@type"] = load["pressureValType"]
+
+            if "linearParam" in load:
+                surface_load["linear"] = {"#value": load["linearParam"]}
+
+            if "matrix" in load:
+                surface_load["symmetric_stiffness"] = {"#value": load["matrix"]}
+
+            if "pressureTop" in load:
+                surface_load["shell_bottom"] = {"#value": load["pressureTop"]}
+
+            if "initialPressure" in load:
+                surface_load["P0"] = {"#value": load["initialPressure"]}
+
+            if "surfaceName" in load:
+                surface_load["@surface"] = load["surfaceName"]
+
+            if "loadType" in load:
+                surface_load["@type"] = load["loadType"]
             step_data["Loads"]["surface_load"].append(surface_load)
 
         xml_object["Step"]["step"][i].update(step_data)
@@ -147,11 +160,17 @@ def json_to_febio_template(febio_form, xml_object):
 class FebioConfigGenerator():
     def __init__(self) -> None:
         pass
-
+    
+    
     def generate_xml_(self, data, userid, projectid, caseid, meshPath, boundaryPath, meshValue={}, boundaryValue={}):
 
+        def prettify_xml(element):
+            """Return a pretty-printed XML string for the Element."""
+            rough_string = ET.tostring(element, encoding="utf-8")
+            reparsed = minidom.parseString(rough_string)
+            return reparsed.toprettyxml(indent="    ")
+        
         def safe_attrib(value):
-            """Ensures that the attribute value is a string and not None."""
             return str(value) if value is not None else ""
 
         def find_surface_names(mesh_content):
@@ -316,8 +335,11 @@ class FebioConfigGenerator():
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
         # Write the final XML tree to file
-        tree = ET.ElementTree(febio_spec)
-        tree.write(file_path, encoding="utf-8", xml_declaration=True)
+        febio_spec = prettify_xml(febio_spec)
+        # tree = ET.ElementTree(febio_spec)
+        # tree.write(file_path, encoding="utf-8", xml_declaration=True)
+        with open(file_path, "w", encoding="utf-8") as file:
+            file.write(prettify_xml(febio_spec))
 
         return file_path
 

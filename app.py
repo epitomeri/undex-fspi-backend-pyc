@@ -74,7 +74,8 @@ def update_control_dict(caseid, projectid, blastfoam_folder, userid):
     """
     Updates the controlDict file in the specified blastfoam folder to change stopAt to noWriteNow.
     """
-    control_dict_path = os.path.join('./projects', userid, 'projects', projectid, caseid, blastfoam_folder, 'system', 'controlDict')
+    control_dict_path = os.path.join('./projects', userid, projectid, caseid, blastfoam_folder, 'system', 'controlDict')
+    print(control_dict_path)
 
     # Check if the file exists
     if not os.path.exists(control_dict_path):
@@ -98,7 +99,7 @@ def update_control_dict(caseid, projectid, blastfoam_folder, userid):
     except Exception as e:
         return {"error": f"Failed to update controlDict: {str(e)}"}, 500
 
-@backend_routes.route("/update_control_dict/<caseid>/<projectid>/<userid>/<blastfoam_folder>", methods=['GET', 'POST', 'OPTIONS']) # type: ignore
+@backend_routes.route("/<caseid>/<projectid>/<userid>/<blastfoam_folder>/update_control_dict", methods=['GET', 'POST', 'OPTIONS']) # type: ignore
 def update_control_dict_endpoint(caseid, projectid, userid, blastfoam_folder):
     """
     API endpoint to update the controlDict file's stopAt value in the specified blastfoam folder.
@@ -109,7 +110,7 @@ def update_control_dict_endpoint(caseid, projectid, userid, blastfoam_folder):
     if request.method == 'POST' or request.method == 'GET':
         # Call the function to update controlDict
         userid = process_userid_for_folder_name(userid)
-        result, status_code = update_control_dict(caseid, projectid, blastfoam_folder, userid)
+        result, status_code = update_control_dict(caseid, projectid, f'fluid-blastFOAM/{blastfoam_folder}', userid)
         return jsonify(result), status_code
 
 def get_public_ip():
@@ -121,7 +122,7 @@ def get_public_ip():
     except requests.RequestException as e:
         return "Unable to retrieve public IP"
 
-@backend_routes.route("/pvserver/<caseid>/<projectid>/<userid>", methods=['GET', 'POST', 'DELETE', 'OPTIONS']) # type: ignore
+@backend_routes.route("/<caseid>/<projectid>/<userid>/pvserver", methods=['GET', 'POST', 'DELETE', 'OPTIONS']) # type: ignore
 def manage_pvserver(caseid, projectid, userid):
     global pvserver_process
 
@@ -195,7 +196,7 @@ def manage_pvserver(caseid, projectid, userid):
         else:
             return jsonify({"error": "PVServer is not running."}), 400
 
-@backend_routes.route("/blastfoamgen/<caseid>/<projectid>/<userid>", methods=['POST', 'OPTIONS'])  # type: ignore
+@backend_routes.route("/<caseid>/<projectid>/<userid>/blastfoamgen", methods=['POST', 'OPTIONS'])  # type: ignore
 def handle_blastfoam(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -241,14 +242,13 @@ def handle_blastfoam(caseid, projectid, userid):
                     os.chmod(os.path.join(item_path, 'Allclean'), 0o755)
                     subprocess.run(['bash', os.path.join(item_path, 'Allclean')])
 
-
         zip_file_name = os.path.basename(projects_dir) + '.zip'
         zip_file_path = os.path.join('./tmp', secure_filename(zip_file_name)) # type: ignore
         shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=projects_dir)
 
         return send_file(zip_file_path, as_attachment=True)
 
-@backend_routes.route('/febiogen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/febiogen', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_febiogen(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -264,7 +264,7 @@ def handle_febiogen(caseid, projectid, userid):
         solver_case_json = request.form.get('solverCase')
         templateUrl = request.form.get('templateLink')
         data = json.loads(solver_case_json) # type: ignore
-        data['template'] = fetch_feb_data(templateUrl)
+        data['template'] = fetch_feb_file_from_database(templateUrl)
         if data['template']:
             print(data['template'].keys())
 
@@ -278,8 +278,43 @@ def handle_febiogen(caseid, projectid, userid):
         ScriptGen.gen_solid_script(projectid, userid, caseid)
         print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True) 
+    
+@backend_routes.route('/<caseid>/<projectid>/<userid>/lsdynagen', methods=['POST', 'OPTIONS']) # type: ignore
+def handle_lsdynagen(caseid, projectid, userid):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'POST':
+        userid = process_userid_for_folder_name(userid)
+        directory_path = f'./projects/{userid}/{projectid}/{caseid}/hydro-LSDYNA/'
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
 
-@backend_routes.route('/pulsegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+        solver_case_json = request.form.get('solverCase')
+        serverLink = request.form.get('serverLink')
+        data = json.loads(solver_case_json) # type: ignore
+        for file_data in data["files"]:
+            file_url = file_data["url"]
+            file_content = fetch_file_from_database(f"{serverLink}{file_url}")  # Assuming this returns binary content
+            file_name = file_data["name"]
+
+            # Save file in the directory
+            file_path = os.path.join(directory_path, file_name)
+            with open(file_path, 'wb') as f:
+                f.write(file_content)
+
+         # Create the zip file in the ./tmp directory
+        zip_file_name = secure_filename(os.path.basename(directory_path.rstrip('/'))) + '.zip'
+        tmp_dir = f'./tmp/{caseid}'
+        if not os.path.exists(tmp_dir):
+            os.makedirs(tmp_dir)
+        
+        zip_file_path = os.path.join(tmp_dir, zip_file_name)
+        shutil.make_archive(base_name=zip_file_path.replace('.zip', ''), format='zip', root_dir=directory_path)
+
+        # Send the zip file to the client
+        return send_file(zip_file_path, as_attachment=True, mimetype='application/zip')
+
+@backend_routes.route('/<caseid>/<projectid>/<userid>/pulsegen', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_pulsegen(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -287,12 +322,12 @@ def handle_pulsegen(caseid, projectid, userid):
         data = request.get_json()
 
         userid = process_userid_for_folder_name(userid)
-        directory_path = f'./projects/{userid}/{projectid}/{caseid}/Physiology'
+        directory_path = f'./projects/{userid}/{projectid}/{caseid}/physiology-pulse'
         if not os.path.exists(directory_path):
             os.makedirs(directory_path)
 
-        if not os.path.exists(f'./tmp/{projectid}/Physiology/'):
-            os.makedirs(f'./tmp/{projectid}/Physiology/')
+        if not os.path.exists(f'./tmp/{projectid}/physiology-pulse/'):
+            os.makedirs(f'./tmp/{projectid}/physiology-pulse/')
 
         print('data is ', data)
 
@@ -313,7 +348,7 @@ def handle_pulsegen(caseid, projectid, userid):
 
         return send_from_directory(directory, filename, as_attachment=True)
 
-@backend_routes.route('/precicegen/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/precicegen', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_precice(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -334,7 +369,7 @@ def handle_precice(caseid, projectid, userid):
         print(directory, filename)
         return send_from_directory(directory, filename, as_attachment=True)
     
-@backend_routes.route('/febio/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/febio', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_febio(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -376,7 +411,7 @@ def handle_febio(caseid, projectid, userid):
             ScriptGen.gen_solid_script(projectid, userid, caseid)
             return 'File uploaded successfully', 200
     
-@backend_routes.route("/displacementgraph/<caseid>/<projectid>/<userid>", methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route("/<caseid>/<projectid>/<userid>/displacementgraph", methods=['GET', 'OPTIONS']) # type: ignore
 def handle_displacement_graph(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -398,7 +433,7 @@ def handle_displacement_graph(caseid, projectid, userid):
 
         return send_file(displacement_graph_path, as_attachment=True)
 
-@backend_routes.route('/graphfiles/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS'])
+@backend_routes.route('/<caseid>/<projectid>/<userid>/graphfiles', methods=['GET', 'OPTIONS'])
 def handle_getgraphfiles(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -436,7 +471,7 @@ def handle_getgraphfiles(caseid, projectid, userid):
     
     return jsonify(graph_files), 200
 
-@backend_routes.route('/graphfile/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/graphfile', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getgraphfile(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -473,7 +508,7 @@ def handle_getgraphfile(caseid, projectid, userid):
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
-@backend_routes.route('/raw/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/raw', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getrawgraphfile(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -506,7 +541,7 @@ def handle_getrawgraphfile(caseid, projectid, userid):
         except Exception as e:
             return f"An error occurred: {str(e)}", 500
 
-@backend_routes.route('/logfiles/<caseid>/<projectid>/<userid>', methods=['GET']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/logfiles', methods=['GET']) # type: ignore
 def handle_getlogfiles(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -548,7 +583,7 @@ def find_log_files(root_dir):
             log_files[relative_path] = current_log_files
     return log_files
 
-@backend_routes.route('/logfile/<caseid>/<projectid>/<userid>/<casename>/<logfilename>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/<casename>/<logfilename>/logfile', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
     # Handle preflight CORS request
     if request.method == 'OPTIONS':
@@ -580,7 +615,7 @@ def handle_getlogfile(caseid, projectid, userid, casename: str, logfilename):
             # Handle other errors, like permission issues or unexpected errors
             return Response(f"Error reading log file: {str(e)}", status=500)
 
-@backend_routes.route('/download/<caseid>/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/download', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_download(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -600,7 +635,7 @@ def handle_download(caseid, projectid, userid):
         return send_from_directory(project_base, filename, as_attachment=True)
 
 
-@backend_routes.route('/projects/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<projectid>/<userid>/projects', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_project(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -616,7 +651,7 @@ def handle_patch_project(projectid, userid):
 
         return {"message": 'Project updated'}, 200
 
-@backend_routes.route('/rename-simulation-case/<caseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/rename-simulation-case', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_simulation(caseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -632,7 +667,7 @@ def handle_patch_simulation(caseid, projectid, userid):
 
         return {"message": 'Simulation Case Folder name updated'}, 200
 
-@backend_routes.route('/rename-case/<caseid>/<simulationcaseid>/<projectid>/<userid>', methods=['POST', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<caseid>/<simulationcaseid>/<projectid>/<userid>/rename-case', methods=['POST', 'OPTIONS']) # type: ignore
 def handle_patch_case(caseid, simulationcaseid, projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -659,7 +694,7 @@ def delete_directory(path):
             os.rmdir(dir_path)
     os.rmdir(path)
 
-@backend_routes.route('/deleteproject/<projectid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<projectid>/<userid>/deleteproject', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_delete_project(projectid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -672,7 +707,7 @@ def handle_delete_project(projectid, userid):
         else:
             return {"message": 'Project not found'}, 404
 
-@backend_routes.route('/deleteCase/<projectid>/<caseid>/<userid>', methods=['GET', 'OPTIONS']) # type: ignore
+@backend_routes.route('/<projectid>/<caseid>/<userid>/deleteCase', methods=['GET', 'OPTIONS']) # type: ignore
 def handle_deleteCase(projectid, caseid, userid):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -685,7 +720,7 @@ def handle_deleteCase(projectid, caseid, userid):
         else:
             return {"message": 'Case not found'}, 404
 
-@backend_routes.route('/run/<caseid>/<projectid>/<userid>', methods=['GET'])  # type: ignore
+@backend_routes.route('/<caseid>/<projectid>/<userid>/run', methods=['GET'])  # type: ignore
 def handle_run(caseid, projectid, userid):
     if request.method == 'GET':
         print("running", caseid, projectid)
@@ -826,7 +861,7 @@ def parse_other_file(filename, content):
     
     return result
 
-@backend_routes.route("/blastfoam/data/<caseid>/<projectid>/<userid>/<caseName>", methods=['GET', 'OPTIONS'])  # type: ignore
+@backend_routes.route("/<caseid>/<projectid>/<userid>/<caseName>/blastfoam/data", methods=['GET', 'OPTIONS'])  # type: ignore
 def fetch_blastfoam_data(caseid, projectid, userid, caseName):
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
@@ -854,7 +889,7 @@ def fetch_blastfoam_data(caseid, projectid, userid, caseName):
                     # Parse content to get the required data format
                         parsed_content = parse_file_content(content, file)
                     else:
-                            parsed_content = parse_other_file(file, content)
+                        parsed_content = parse_other_file(file, content)
                     
                     response_data.append({
                         'subfolder': os.path.relpath(subdir, project_base),
@@ -924,7 +959,7 @@ def parse_file_content(content, filename):
     
     return result
 
-def fetch_feb_data(url):
+def fetch_feb_file_from_database(url):
     try:
         
         # Make the GET request
@@ -941,6 +976,20 @@ def fetch_feb_data(url):
     except json.JSONDecodeError:
         print("Error decoding JSON. Ensure the API returns a valid JSON.")
         return None
+    
+def fetch_file_from_database(file_url: str) -> bytes:
+    try:
+        response = requests.get(file_url, timeout=10)
+
+        # Check if the request was successful
+        if response.status_code != 200:
+            raise ValueError(f"Failed to fetch file from URL: {file_url}. HTTP Status: {response.status_code}")
+
+        # Return the binary content of the file
+        return response.content
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching file from URL: {file_url}. Error: {e}")
+        raise
 
 def _build_cors_preflight_response():
     response = make_response()

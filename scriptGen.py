@@ -123,7 +123,7 @@ echo "Preparing and running the Solid participant..."
 cd {project_base_path}
 cd Solid
 ./Allclean
-febio-precice febio-case.feb ../../coupling-preCICE/precice-config.xml > febio-precice.log 
+febio4-precice febio-case.feb ../../coupling-preCICE/precice-config.xml > febio-precice.log 
 """
     
             file.write(solid_script)
@@ -139,10 +139,6 @@ rm *.xplt
     
             file.write(clean_script)
             os.chmod(os.path.join(solid_base_path, f'Allclean'), 0o755)
-            
-
-
-
 
     @staticmethod
     def gen_fluid_script(projectid, userid, caseid):
@@ -182,13 +178,13 @@ cd Fluid-Inner
                         if 'Allrun' in os.listdir(case_item_path):
                             run_script_lines.append(f"chmod 755 {case_item_path}/Allclean")
                             run_script_lines.append(f"chmod 755 {case_item_path}/Allrun")
-                            run_script_lines.append(f"kill_blastfoam.sh {case_item_path}/")
+                            run_script_lines.append(f"kill_blastfoam.sh .{case_item_path.replace(project_base_path, '')}/")
                             run_script_lines.append(f"./{case_item_path}/Allclean")
                             run_script_lines.append(f"rm -f {case_item_path}/log.*")
-                            run_script_lines.append(f"./{case_item_path}/Allrun")
+                            run_script_lines.append(f"./{case_item_path}/Allrun &")
                 if 'runSolid' in os.listdir(item_path):
                     run_script_lines.append(f"chmod 755 {item_path}/runSolid")
-                    run_script_lines.append(f"./{item_path}/runSolid")
+                    run_script_lines.append(f"./{item_path}/runSolid &")
                 if 'runPulse.py' in os.listdir(item_path):
                     pulse_install_dir = os.getenv('PULSE_INSTALL_DIR')
                     run_pulse_dir = os.path.abspath(item_path)
