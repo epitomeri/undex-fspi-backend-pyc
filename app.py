@@ -620,29 +620,33 @@ def handle_getinputFiles(caseid, projectid, userid):
                 folder_path = os.path.join(base_dir, current_path, folder)
                 if folder == "fluid-blastFOAM":
                     # Special handling for fluid-blastFOAM: recursively search all subfolders
-                    for subdir, _, _ in os.walk(os.path.join(base_dir, current_path, folder)):
-                        subdir_relative = os.path.relpath(subdir, base_dir).replace(os.sep, ":")
-                        for subfolder, subcontents in contents.items():
-                            specific_path = os.path.join(subdir, subfolder)
-                            relative_path = os.path.join(subdir_relative, subfolder).replace(os.sep, ":")
-                            if os.path.exists(specific_path):
-                                if subcontents == "ALL":
-                                    # Add all files in this folder
-                                    all_files = [
-                                        f for f in os.listdir(specific_path)
-                                        if os.path.isfile(os.path.join(specific_path, f))
-                                    ]
-                                    if all_files:
-                                        result_files[relative_path] = all_files
-                                else:
-                                    # Match specific files case-insensitively
-                                    matched_files = [
-                                        f for f in os.listdir(specific_path)
-                                        if os.path.isfile(os.path.join(specific_path, f)) and
-                                        f.lower() in map(str.lower, subcontents)
-                                    ]
-                                    if matched_files:
-                                        result_files[relative_path] = matched_files
+                    case_base_path = os.path.join(base_dir, current_path, folder)
+                    if os.path.exists(case_base_path):
+                        for case_folder in os.listdir(case_base_path):
+                            case_path = os.path.join(case_base_path, case_folder)
+                            if os.path.isdir(case_path):
+                                # Only look for 0, constant, or system directly under case_path
+                                for subfolder, subcontents in contents.items():
+                                    specific_path = os.path.join(case_path, subfolder)
+                                    relative_path = os.path.relpath(specific_path, base_dir).replace(os.sep, ":")
+                                    if os.path.exists(specific_path):
+                                        if subcontents == "ALL":
+                                            # Add all files in this folder
+                                            all_files = [
+                                                f for f in os.listdir(specific_path)
+                                                if os.path.isfile(os.path.join(specific_path, f))
+                                            ]
+                                            if all_files:
+                                                result_files[relative_path] = all_files
+                                        else:
+                                            # Match specific files case-insensitively
+                                            matched_files = [
+                                                f for f in os.listdir(specific_path)
+                                                if os.path.isfile(os.path.join(specific_path, f)) and
+                                                f.lower() in map(str.lower, subcontents)
+                                            ]
+                                            if matched_files:
+                                                result_files[relative_path] = matched_files
                 else:
                     # General case for other folders
                     if os.path.exists(folder_path):
