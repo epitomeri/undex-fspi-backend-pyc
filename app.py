@@ -677,6 +677,30 @@ def handle_getinputFiles(caseid, projectid, userid):
         # Return the results
         return jsonify(matched_files), 200
 
+@backend_routes.route('/<caseid>/<projectid>/<userid>/<filename>/inputFile', methods=['GET']) # type: ignore
+def handle_getinputFile(caseid, projectid, userid, filename):
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    elif request.method == 'GET':
+        userid = process_userid_for_folder_name(userid)
+        filename = filename.replace(":", "/")
+        project_base = f'./projects/{userid}/{projectid}/{caseid}'
+
+        if not os.path.exists(project_base):
+            return jsonify({"error": "Project path does not exist"}), 404
+
+        file_path = os.path.join(project_base, filename)
+
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+        
+        try:
+            with open(file_path, 'r') as file:
+                content = file.read()
+            return jsonify({"content": content}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
 def find_log_files(root_dir):
     log_files = {}
     for dirpath, _, filenames in os.walk(root_dir):
