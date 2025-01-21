@@ -132,15 +132,21 @@ def find_available_port(starting_port=11111):
 
 def find_pvserver_process(projects_dir):
     try:
-        result = subprocess.run(['pgrep', '-af', f'pvserver.*{projects_dir}'], capture_output=True, text=True)
+        # Get the list of PIDs running in the projects_dir with pvserver as the command
+        result = subprocess.run(f"lsof +D {projects_dir} | grep '^pvserver' | awk '{{print $2}}'", shell=True, capture_output=True, text=True)
         if result.stdout:
-            for line in result.stdout.splitlines():
-                parts = line.split()
-                pid = int(parts[0])
-                for part in parts:
-                    if part.startswith('--server-port'):
-                        port = int(part.split('=')[1])
-                        return pid, port
+            pids = result.stdout.split()
+            for pid in pids:
+                # Get the port number for each PID
+                port_result = subprocess.run(f"lsof -Pan -p {pid} -i | grep LISTEN", shell=True, capture_output=True, text=True)
+                if port_result.stdout:
+                    for line in port_result.stdout.splitlines():
+                        parts = line.split()
+                        for part in parts:
+                            if 'TCP' in part:
+                                port = int(part.split(':')[-1])
+                                print(f"Found pvserver process with PID {pid} and port {port}") 
+                                return int(pid), port
     except Exception as e:
         print(f"Error finding pvserver process: {e}")
     return None, None
@@ -174,7 +180,7 @@ def manage_pvserver(caseid, projectid, userid):
             port = find_available_port(starting_port=11111)
 
             # Execute the pvserver command in the specified project directory
-            subprocess.Popen(['pvserver', '--server-port', str(port)], cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            subprocess.Popen(['pvserver', f'--server-port={port}'], cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
             # Get the public IP address of the server
             public_ip = get_public_ip()
