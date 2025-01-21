@@ -122,49 +122,66 @@ def get_public_ip():
     except requests.RequestException as e:
         return "Unable to retrieve public IP"
 
+def find_available_port(starting_port=11111):
+    port = starting_port
+    while True:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(('localhost', port)) != 0:
+                return port
+            port += 1
+
+def find_pvserver_process(projects_dir):
+    try:
+        # Get the list of PIDs running in the projects_dir with pvserver as the command
+        result = subprocess.run(f"lsof +D {projects_dir} | grep '^pvserver' | awk '{{print $2}}'", shell=True, capture_output=True, text=True)
+        if result.stdout:
+            pids = result.stdout.split()
+            for pid in pids:
+                # Get the port number for each PID
+                port_result = subprocess.run(f"lsof -Pan -p {pid} -i | grep LISTEN", shell=True, capture_output=True, text=True)
+                if port_result.stdout:
+                    for line in port_result.stdout.splitlines():
+                        parts = line.split()
+                        print(parts)
+                        for part in parts:
+                            if '*:' in part:
+                                port = int(part.split(':')[-1])
+                                print(f"Found pvserver process with PID {pid} and port {port}") 
+                                return int(pid), port
+    except Exception as e:
+        print(f"Error finding pvserver process: {e}")
+    return None, None
+
 @backend_routes.route("/<caseid>/<projectid>/<userid>/pvserver", methods=['GET', 'POST', 'DELETE', 'OPTIONS']) # type: ignore
 def manage_pvserver(caseid, projectid, userid):
-    global pvserver_process
-
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
     
-    # Start the server
-    elif request.method == 'POST' or request.method == 'GET':
-        if pvserver_process and pvserver_process.poll() is None:
+    projects_dir = f'./projects/{userid}/{projectid}/{caseid}'
 
+    if not os.path.exists(projects_dir):
+        return jsonify({"error": f"Project directory '{projectid}' does not exist."}), 404
+
+    if request.method == 'POST' or request.method == 'GET':
+        pvserver_pid, pvserver_port = find_pvserver_process(projects_dir)
+        if pvserver_pid:
             # Get the public IP address of the server
             public_ip = get_public_ip()
 
             # Construct the response data with the correct public information
             response_data = {
                 "message": "PVServer is already running.",
-                "connection_url": f"cs://{public_ip}:{11111}",
-                "port": 11111,
+                "connection_url": f"cs://{public_ip}:{pvserver_port}",
+                "port": pvserver_port,
                 "ip_address": public_ip
             }
             return jsonify(response_data), 200
 
-        projects_dir = f'./projects/{userid}/{projectid}/{caseid}'
-
-        if not os.path.exists(projects_dir):
-            return jsonify({"error": f"Project directory '{projectid}' does not exist."}), 404
-
         try:
+            port = find_available_port(starting_port=11111)
+
             # Execute the pvserver command in the specified project directory
-            pvserver_process = subprocess.Popen(['pvserver'], cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-            # Read the output line by line to capture the connection details
-            port = None
-            while True:
-                output = pvserver_process.stdout.readline()
-                if "Connection URL" in output:
-                    # Extract the port number from the output
-                    port = output.split(':')[-1].strip()
-                    break
-
-            if port is None:
-                return jsonify({"error": "Failed to start pvserver and retrieve port information."}), 500
+            subprocess.Popen(['pvserver', f'--server-port={port}'], cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
             # Get the public IP address of the server
             public_ip = get_public_ip()
@@ -182,14 +199,12 @@ def manage_pvserver(caseid, projectid, userid):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    # Stop the server
     elif request.method == 'DELETE':
-        if pvserver_process and pvserver_process.poll() is None:
+        pvserver_pid, _ = find_pvserver_process(projects_dir)
+        if pvserver_pid:
             try:
                 # Terminate the pvserver process
-                pvserver_process.terminate()
-                pvserver_process.wait()
-                pvserver_process = None
+                os.kill(pvserver_pid, 15)  # 15 is the signal number for SIGTERM
                 return jsonify({"message": "PVServer stopped successfully."}), 200
             except Exception as e:
                 return jsonify({"error": f"Failed to stop pvserver: {str(e)}"}), 500
