@@ -142,8 +142,9 @@ def find_pvserver_process(projects_dir):
                 if port_result.stdout:
                     for line in port_result.stdout.splitlines():
                         parts = line.split()
+                        print(parts)
                         for part in parts:
-                            if 'TCP' in part:
+                            if '*:' in part:
                                 port = int(part.split(':')[-1])
                                 print(f"Found pvserver process with PID {pid} and port {port}") 
                                 return int(pid), port
