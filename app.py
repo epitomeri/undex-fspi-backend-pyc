@@ -180,8 +180,13 @@ def manage_pvserver(caseid, projectid, userid):
         try:
             port = find_available_port(starting_port=11111)
 
-            # Execute the pvserver command in the specified project directory
-            subprocess.Popen(['pvserver', f'--server-port={port}'], cwd=projects_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+             # Define the log file path
+            log_file_path = os.path.join(projects_dir, 'pvserver.log')
+
+            # Open the log file in append mode
+            with open(log_file_path, 'a') as log_file:
+                # Execute the pvserver command in the specified project directory
+                subprocess.Popen(['pvserver', f'--server-port={port}'], cwd=projects_dir, stdout=log_file, stderr=log_file, text=True)
 
             # Get the public IP address of the server
             public_ip = get_public_ip()
