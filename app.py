@@ -181,7 +181,7 @@ def manage_pvserver(caseid, projectid, userid):
             port = find_available_port(starting_port=11111)
 
              # Define the log file path
-            log_file_path = os.path.join(projects_dir, 'pvserver.log')
+            log_file_path = os.path.join(projects_dir, 'pvserver')
 
             # Open the log file in append mode
             with open(log_file_path, 'a') as log_file:
