@@ -4,3 +4,12 @@ resources/*
 */__pycache__/
 __pycache__/
 .env
+*.py
+!*.pyc
+*.tar.gz
+*.zip
+vendor/
+env/
+.venv/
+.DS_Store
+*.log
