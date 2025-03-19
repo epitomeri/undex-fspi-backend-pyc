@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 import json
 
-load_dotenv()
+# load_dotenv()
 auth0_api = Blueprint('auth0_api', __name__)
 
 @auth0_api.route('/roles', methods=['POST'])

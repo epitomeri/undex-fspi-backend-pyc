@@ -45,7 +45,7 @@ cors = CORS(app, resource={
 })
 
 
-load_dotenv("./.env")
+# load_dotenv("./.env")
 app.config['MAIL_SERVER']='smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'aiformissiledefense'
