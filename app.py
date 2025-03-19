@@ -53,7 +53,7 @@ app.config['MAIL_PASSWORD'] = 'zatrwjdvmhhxfxrd'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
-INSTANCE_NAME = 'byo_server'
+INSTANCE_NAME = '/byo_server'
 
 backend_routes = Blueprint('user', __name__, url_prefix=INSTANCE_NAME)
 
